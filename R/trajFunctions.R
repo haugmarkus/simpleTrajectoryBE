@@ -46,7 +46,6 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
     return(message("Vector length not equal!"))
   }
   else {
-    returnList = list()
 
     sql = "select * from ("
 
@@ -94,10 +93,10 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
       eligiblePatients = eligiblePatients$SUBJECT_ID
     )
 
-    returnList[[1]] <- DatabaseConnector::querySql(connection,
+    returnData <- DatabaseConnector::querySql(connection,
                                         sql = sql2)
 
-    return(returnList)
+    return(returnData)
   }
 }
 
@@ -113,8 +112,6 @@ looseTrajectories <- function(connection, dbms, schema, svector) {
     return(message("Vector length smaller than 1!"))
   }
   else {
-    returnList = list()
-
     tempTableLabels = paste("SimpleBE_", 1:length(svector), "_state", sep = "")
 
     ############################################################################
@@ -178,24 +175,23 @@ looseTrajectories <- function(connection, dbms, schema, svector) {
         "CREATE TEMP TABLE ",
         tempTableLabels[index],
         " AS
-SELECT forth.subject_id as subject_id, forth.state as state, forth.s_index as s_index from (
-SELECT subject_id, state, MIN(s_index) as s_index FROM (
+SELECT forth.subject_id as subject_id, forth.state as state, MIN(forth.s_index) as s_index from (
+SELECT subject_id, state, s_index FROM (
                                                            SELECT
                                                                subject_id, state,
                                                                ROW_NUMBER() OVER(PARTITION BY subject_id ORDER BY subject_id, state_start_date) as s_index
                                                            FROM @schema.patient_trajectories) a WHERE state = '",
         svector[index],
-        "' GROUP BY subject_id, state) forth
+        "') forth
 INNER JOIN ",
         tempTableLabels[index - 1],
-        " fro ON fro.subject_id = forth.subject_id WHERE fro.s_index < forth.s_index;",
+        " fro ON fro.subject_id = forth.subject_id WHERE fro.s_index < forth.s_index GROUP BY forth.subject_id, forth.state;",
         sep = ""
       )
 
       sql = loadRenderTranslateSql(dbms = dbms,
                                    sql = sql,
                                    schema = schema)
-
       DatabaseConnector::executeSql(connection,
                                     sql = sql)
     }
@@ -211,9 +207,45 @@ INNER JOIN ",
       eligiblePatients = eligiblePatients$SUBJECT_ID
     )
 
-    returnList[[1]] <- DatabaseConnector::querySql(connection,
+    returnData <- DatabaseConnector::querySql(connection,
                                                    sql = sql2)
 
-    return(returnList)
+    return(returnData)
   }
 }
+
+
+
+#' Query all trajectories defined in the settings
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @param svector The names of the states which form the observed trajectory
+outputAll = function(connection, dbms, schema, settings){
+  returnList = list()
+  for (traj in 1:length(settings)) {
+    if (settings[[traj]]$TYPE[1] == 0) {
+      # 0 means loose trajectory
+      returnList[[traj]] = looseTrajectories(
+        connection = connection,
+        dbms = dbms,
+        schema = schema,
+        svector = settings[[traj]]$STATE
+      )
+    }
+    if (settings[[traj]]$TYPE[1] == 1){
+      # 1 means exact trajectory
+      returnList[[traj]] = exactTrajectories(
+        connection = connection,
+        dbms = dbms,
+        schema = schema,
+        ivector = settings[[traj]]$INDEX,
+        svector = settings[[traj]]$STATE
+      )
+    }
+  }
+  return(returnList)
+}
+
+

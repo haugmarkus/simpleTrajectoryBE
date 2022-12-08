@@ -1,0 +1,4 @@
+"","FROM","TO","TRAJECTORY_ID","INDEX"
+"1","START","HF1",1,1
+"2","HF1","HF1",1,2
+"3","HF1","HF1",1,3

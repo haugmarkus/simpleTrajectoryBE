@@ -3,5 +3,4 @@
 export(createConnectionSQLite)
 export(createTrajectoriesTable)
 export(exactTrajectories)
-export(loadUITrajectories)
 export(looseTrajectories)
