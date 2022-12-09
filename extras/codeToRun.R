@@ -3,7 +3,7 @@
 # Example
 #
 ################################################################################
-
+devtools::install_github("haugmarkus/simpleTrajectoryBE")
 # Loading UI output trajectory settings
 library(simpleTrajectoryBE)
 pathToFile = "./inputUI.csv"

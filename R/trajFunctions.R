@@ -222,6 +222,7 @@ INNER JOIN ",
 #' @param dbms The database management system
 #' @param schema Schema in the database where the tables are located
 #' @param svector The names of the states which form the observed trajectory
+#' @export
 outputAll = function(connection, dbms, schema, settings){
   returnList = list()
   for (traj in 1:length(settings)) {

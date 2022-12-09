@@ -32,7 +32,8 @@ createTrajectoriesTable = function(conn, data, schema){
 # Load UI settings
 #
 ################################################################################
-
+#' @param pathToFile The path to the settings file
+#' @export
 loadUITrajectories = function(pathToFile = NULL, settings = NA){
   if(!is.null(pathToFile)){
     settings <- readr::read_csv(pathToFile)
