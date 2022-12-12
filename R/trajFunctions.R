@@ -111,6 +111,21 @@ looseTrajectories <- function(connection, dbms, schema, svector) {
   if (length(svector) < 1) {
     return(message("Vector length smaller than 1!"))
   }
+  if (length(svector) == 1) {
+      eligiblePatients <- DatabaseConnector::querySql(connection,
+                                                      sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE = '",svector[1], "';", sep = ""))
+
+      sql2 = loadRenderTranslateSql(
+        dbms = dbms,
+        sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
+        schema = schema,
+        eligiblePatients = eligiblePatients$SUBJECT_ID
+      )
+
+      returnData <- DatabaseConnector::querySql(connection,
+                                                sql = sql2)
+      return(returnData)
+    }
   else {
     tempTableLabels = paste("SimpleBE_", 1:length(svector), "_state", sep = "")
 
@@ -208,7 +223,7 @@ INNER JOIN ",
     )
 
     returnData <- DatabaseConnector::querySql(connection,
-                                                   sql = sql2)
+                                              sql = sql2)
 
     return(returnData)
   }
@@ -223,7 +238,7 @@ INNER JOIN ",
 #' @param schema Schema in the database where the tables are located
 #' @param svector The names of the states which form the observed trajectory
 #' @export
-outputAll = function(connection, dbms, schema, settings){
+outputAll = function(connection, dbms, schema, settings) {
   returnList = list()
   for (traj in 1:length(settings)) {
     if (settings[[traj]]$TYPE[1] == 0) {
@@ -235,7 +250,7 @@ outputAll = function(connection, dbms, schema, settings){
         svector = settings[[traj]]$STATE
       )
     }
-    if (settings[[traj]]$TYPE[1] == 1){
+    if (settings[[traj]]$TYPE[1] == 1) {
       # 1 means exact trajectory
       returnList[[traj]] = exactTrajectories(
         connection = connection,

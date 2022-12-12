@@ -19,8 +19,7 @@ conn <- createConnectionSQLite()
 
 # Write datatable into database
 
-data = readr::read_csv("./HeartFailuregeneratedTrajectoriesDiscrete.csv")
-
+data = readr::read_csv("./TestSchemaTrajectories.csv")
 
 createTrajectoriesTable(conn = conn, schema = schema, data = data)
 
@@ -86,4 +85,42 @@ head(result)
 #
 ################################################################################
 
-outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
+result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
+
+################################################################################
+#
+# Simple business process map
+#
+################################################################################
+
+library(bupaR)
+library(dplyr)
+
+# I trajektoori result
+data2 = result[[1]]
+
+# Enne seda võiks küsida, et kas kasutaja tahab eristada sama nimega seisundite esinemise järjekorda
+# Ehk siis siin varustane tabeli vastava infoga, mitmes kord patsiendil seisundis x olla on
+data2 = dplyr::ungroup(dplyr::mutate(dplyr::group_by(data2,SUBJECT_ID, STATE),ID_REC = row_number()))
+data2$STATE = paste(data2$STATE,data2$ID_REC, sep = "_")
+
+# Formatting dates
+data2$STATE_START_DATE = bupaR::ymd_hms(paste(data2$STATE_START_DATE, "00:00:00"),tz=Sys.timezone())
+data2$STATE_END_DATE = bupaR::ymd_hms(paste(data2$STATE_END_DATE, "00:00:00"),tz=Sys.timezone())
+# Creating bupaR activitylog
+eventlog = bupaR::simple_eventlog(eventlog = data2,
+                                  case_id = "SUBJECT_ID",
+                                  activity_id = "STATE",
+                                  timestamp = "STATE_START_DATE")
+eventlog =dplyr::rename(data2, start = STATE_START_DATE, # rename timestamp variables appropriately
+                complete = STATE_END_DATE)
+  # convert timestamps to
+eventlog = bupaR::convert_timestamps(eventlog,columns = c("start", "complete"), format = ymd)
+eventlog = bupaR::activitylog(activitylog = eventlog, case_id = "SUBJECT_ID",
+              activity_id = "STATE",
+              timestamps = c("start", "complete"),
+              resource_id = "SUBJECT_ID"
+  )
+# bupaR plot
+processmapR::process_map(eventlog)
+
