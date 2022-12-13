@@ -58,7 +58,7 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
                             STATE_START_DATE,
                             ROW_NUMBER()
                             OVER (PARTITION BY SUBJECT_ID ORDER BY SUBJECT_ID, STATE_START_DATE) as s_index
-                     FROM @schema.patient_trajectories) i
+                     FROM @schema.exact_patient_trajectories) i
                where s_index =",
         ivector[index],
         " and STATE ='",

@@ -24,6 +24,13 @@ createTrajectoriesTable = function(conn, data, schema){
                                  tableName = "patient_trajectories",
                                  databaseSchema = schema,
                                  data = data)
+  data$TO_STATE = c(data$STATE[2:nrow(data)], "$$not_initialized$$")
+  data = dplyr::select(subset(data, STATE != TO_STATE), -TO_STATE)
+  DatabaseConnector::insertTable(connection = conn,
+                                 tableName = "exact_patient_trajectories",
+                                 databaseSchema = schema,
+                                 data = data)
+
 }
 
 
