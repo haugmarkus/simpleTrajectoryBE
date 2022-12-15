@@ -112,8 +112,14 @@ looseTrajectories <- function(connection, dbms, schema, svector) {
     return(message("Vector length smaller than 1!"))
   }
   if (length(svector) == 1) {
+
+      sql = loadRenderTranslateSql(
+        dbms = dbms,
+        sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE = '",svector[1], "';", sep = ""),
+        schema = schema
+      )
       eligiblePatients <- DatabaseConnector::querySql(connection,
-                                                      sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE = '",svector[1], "';", sep = ""))
+                                                      sql = sql)
 
       sql2 = loadRenderTranslateSql(
         dbms = dbms,
@@ -121,7 +127,6 @@ looseTrajectories <- function(connection, dbms, schema, svector) {
         schema = schema,
         eligiblePatients = eligiblePatients$SUBJECT_ID
       )
-
       returnData <- DatabaseConnector::querySql(connection,
                                                 sql = sql2)
       return(returnData)

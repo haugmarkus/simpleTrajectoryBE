@@ -72,7 +72,7 @@ result = looseTrajectories(
   connection = conn,
   dbms = dbms,
   schema = schema,
-  svector = trajSettings[[2]]$STATE
+  svector = trajSettings[[1]]$STATE
 )
 
 head(result)
@@ -103,6 +103,8 @@ data2 = result[[1]]
 # Ehk siis siin varustane tabeli vastava infoga, mitmes kord patsiendil seisundis x olla on
 data2 = dplyr::ungroup(dplyr::mutate(dplyr::group_by(data2,SUBJECT_ID, STATE),ID_REC = row_number()))
 data2$STATE = paste(data2$STATE,data2$ID_REC, sep = "_")
+# Näiteks kui seda HFD data'ga teha, siis läheb graph liiga suureks ja ei arvuta koguni välja ...
+
 
 # Formatting dates
 data2$STATE_START_DATE = bupaR::ymd_hms(paste(data2$STATE_START_DATE, "00:00:00"),tz=Sys.timezone())
