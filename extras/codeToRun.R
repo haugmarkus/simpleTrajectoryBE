@@ -50,8 +50,8 @@ result = exactTrajectories(
   ivector = trajSettings[[1]]$INDEX,
   svector = trajSettings[[1]]$STATE
 )
-
 head(result)
+length(unique(result$SUBJECT_ID))
 
 
 ################################################################################
@@ -76,6 +76,7 @@ result = looseTrajectories(
 )
 
 head(result)
+length(unique(result$SUBJECT_ID))
 
 ################################################################################
 #
@@ -97,6 +98,7 @@ library(bupaR)
 library(dplyr)
 
 # I trajektoori result
+
 data2 = result[[1]]
 
 # Enne seda võiks küsida, et kas kasutaja tahab eristada sama nimega seisundite esinemise järjekorda

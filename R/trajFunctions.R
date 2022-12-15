@@ -48,7 +48,8 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
   else {
 
     sql = "select * from ("
-
+    # Check for two same states in a row
+    checker = 0
     for (index in 1:length(ivector)) {
       sql = paste(
         sql,
@@ -58,7 +59,7 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
                             STATE_START_DATE,
                             ROW_NUMBER()
                             OVER (PARTITION BY SUBJECT_ID ORDER BY SUBJECT_ID, STATE_START_DATE) as s_index
-                     FROM @schema.exact_patient_trajectories) i
+                     FROM @schema.@table) i
                where s_index =",
         ivector[index],
         " and STATE ='",
@@ -69,6 +70,9 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
         if (index != length(ivector)) {
           sql = paste(sql, "INTERSECT ")
         }
+        if (index > 1 && svector[index] == svector[index-1]){
+          x = 1
+        }
 
     }
 
@@ -77,10 +81,13 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
       ") as 'SUBJECT_ID';"
     )
 
+    table = if (x == 0) "exact_patient_trajectories" else "patient_trajectories"
+
     sql = loadRenderTranslateSql(
       dbms = dbms,
       sql = sql,
-      schema = schema
+      schema = schema,
+      table = table
     )
 
     eligiblePatients <- DatabaseConnector::querySql(connection,
