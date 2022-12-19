@@ -252,13 +252,16 @@ INNER JOIN ",
 #' @export
 outputAll = function(connection, dbms, schema, settings) {
   returnList = list()
+  outIndex = 0
   for (traj in 1:length(settings)) {
+    outIndex = outIndex + 1
     if(is.null(settings[[traj]])) {
+      outIndex = outIndex - 1
       next
     }
     if (settings[[traj]]$TYPE[1] == 0) {
       # 0 means loose trajectory
-      returnList[[traj]] = looseTrajectories(
+      returnList[[outIndex]] = looseTrajectories(
         connection = connection,
         dbms = dbms,
         schema = schema,
@@ -267,7 +270,7 @@ outputAll = function(connection, dbms, schema, settings) {
     }
     if (settings[[traj]]$TYPE[1] == 1) {
       # 1 means exact trajectory
-      returnList[[traj]] = exactTrajectories(
+      returnList[[outIndex]] = exactTrajectories(
         connection = connection,
         dbms = dbms,
         schema = schema,
