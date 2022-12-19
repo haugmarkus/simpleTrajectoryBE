@@ -248,11 +248,14 @@ INNER JOIN ",
 #' @param connection Connection to the database (DatabaseConnector)
 #' @param dbms The database management system
 #' @param schema Schema in the database where the tables are located
-#' @param svector The names of the states which form the observed trajectory
+#' @param settings The settings of generating trajectories
 #' @export
 outputAll = function(connection, dbms, schema, settings) {
   returnList = list()
   for (traj in 1:length(settings)) {
+    if(is.null(settings[[traj]])) {
+      next
+    }
     if (settings[[traj]]$TYPE[1] == 0) {
       # 0 means loose trajectory
       returnList[[traj]] = looseTrajectories(

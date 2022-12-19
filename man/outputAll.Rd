@@ -13,7 +13,7 @@ outputAll(connection, dbms, schema, settings)
 
 \item{schema}{Schema in the database where the tables are located}
 
-\item{svector}{The names of the states which form the observed trajectory}
+\item{settings}{The settings of generating trajectories}
 }
 \description{
 Query all trajectories defined in the settings

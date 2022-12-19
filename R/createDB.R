@@ -41,14 +41,15 @@ createTrajectoriesTable = function(conn, data, schema){
 ################################################################################
 #' @param pathToFile The path to the settings file
 #' @export
-loadUITrajectories = function(pathToFile = NULL, settings = NA){
-  if(!is.null(pathToFile)){
+loadUITrajectories = function(pathToFile = NULL,
+                              settings = NA) {
+  if (!is.null(pathToFile)) {
     settings <- readr::read_csv(pathToFile)
   }
-  nrTrajectories <- length(unique(settings$TRAJECTORY_ID))
+  # nrTrajectories <- length(unique(settings$TRAJECTORY_ID))
   trajList = list()
 
-  for (i in 1:nrTrajectories) {
+  for (i in unique(settings$TRAJECTORY_ID)) {
     trajData <- dplyr::filter(settings, TRAJECTORY_ID == i)
     trajData <- dplyr::arrange(trajData, TIME)
     trajData <- dplyr::select(trajData, STATE, TIME, TYPE)

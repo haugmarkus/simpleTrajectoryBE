@@ -85,7 +85,6 @@ length(unique(result$SUBJECT_ID))
 #
 #
 ################################################################################
-
 result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
 
 ################################################################################
