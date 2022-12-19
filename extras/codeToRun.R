@@ -50,7 +50,7 @@ result = exactTrajectories(
   ivector = trajSettings[[1]]$INDEX,
   svector = trajSettings[[1]]$STATE
 )
-head(result)
+# head(result)
 length(unique(result$SUBJECT_ID))
 
 
@@ -68,15 +68,15 @@ length(unique(result$SUBJECT_ID))
 ################################################################################
 
 # For trajectory with index == 1, all the patients and their data fulfilling the criterias
-result = looseTrajectories(
-  connection = conn,
-  dbms = dbms,
-  schema = schema,
-  svector = trajSettings[[1]]$STATE
-)
-
-head(result)
-length(unique(result$SUBJECT_ID))
+# result = looseTrajectories(
+#   connection = conn,
+#   dbms = dbms,
+#   schema = schema,
+#   svector = trajSettings[[1]]$STATE
+# )
+#
+# head(result)
+# length(unique(result$SUBJECT_ID))
 
 ################################################################################
 #
@@ -99,7 +99,7 @@ library(dplyr)
 # I trajektoori result
 
 data2 = result[[1]]
-
+data2 = data
 # Enne seda võiks küsida, et kas kasutaja tahab eristada sama nimega seisundite esinemise järjekorda
 # Ehk siis siin varustane tabeli vastava infoga, mitmes kord patsiendil seisundis x olla on
 data2 = dplyr::ungroup(dplyr::mutate(dplyr::group_by(data2,SUBJECT_ID, STATE),ID_REC = row_number()))

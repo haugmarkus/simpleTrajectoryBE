@@ -20,6 +20,6 @@ test_that("Quering exact trajectories from DB", {
     svector = trajSettings[[1]]$STATE
   )
   DatabaseConnector::disconnect(connection)
-  expect_equal(length(unique(result$SUBJECT_ID)), 1000)
+  expect_equal(length(unique(result$SUBJECT_ID)), 2000)
 })
 #> Test passed 🥇

@@ -71,7 +71,7 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
           sql = paste(sql, "INTERSECT ")
         }
         if (index > 1 && svector[index] == svector[index-1]){
-          x = 1
+          checker = 1
         }
 
     }
@@ -81,7 +81,7 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
       ") as 'SUBJECT_ID';"
     )
 
-    table = if (x == 0) "exact_patient_trajectories" else "patient_trajectories"
+    table = if (checker == 0) "exact_patient_trajectories" else "patient_trajectories"
 
     sql = loadRenderTranslateSql(
       dbms = dbms,
