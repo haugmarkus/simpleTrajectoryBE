@@ -13,7 +13,7 @@ test_that("Quering exact trajectories from DB", {
   pathToFile = "/inputUI.csv"
   trajSettings = loadUITrajectories((paste(pathToResults,pathToFile, sep ="")))
   result = exactTrajectories(
-    connection = conn,
+    connection = connection,
     dbms = dbms,
     schema = schema,
     ivector = trajSettings[[1]]$INDEX,

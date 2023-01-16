@@ -93,17 +93,17 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
     eligiblePatients <- DatabaseConnector::querySql(connection,
                                                     sql = sql)
 
-    sql2 = loadRenderTranslateSql(
-      dbms = dbms,
-      sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
-      schema = schema,
-      eligiblePatients = eligiblePatients$SUBJECT_ID
-    )
+    # sql2 = loadRenderTranslateSql(
+    #   dbms = dbms,
+    #   sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
+    #   schema = schema,
+    #   eligiblePatients = eligiblePatients$SUBJECT_ID
+    # )
+    #
+    # returnData <- DatabaseConnector::querySql(connection,
+    #                                     sql = sql2)
 
-    returnData <- DatabaseConnector::querySql(connection,
-                                        sql = sql2)
-
-    return(returnData)
+    return(eligiblePatients)
   }
 }
 
@@ -227,17 +227,17 @@ INNER JOIN ",
     eligiblePatients <- DatabaseConnector::querySql(connection,
                                                     sql = paste("SELECT subject_id FROM ", tempTableLabels[length(tempTableLabels)], ";"))
 
-    sql2 = loadRenderTranslateSql(
-      dbms = dbms,
-      sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
-      schema = schema,
-      eligiblePatients = eligiblePatients$SUBJECT_ID
-    )
+    # sql2 = loadRenderTranslateSql(
+    #   dbms = dbms,
+    #   sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
+    #   schema = schema,
+    #   eligiblePatients = eligiblePatients$SUBJECT_ID
+    # )
+    #
+    # returnData <- DatabaseConnector::querySql(connection,
+    #                                           sql = sql2)
 
-    returnData <- DatabaseConnector::querySql(connection,
-                                              sql = sql2)
-
-    return(returnData)
+    return(eligiblePatients)
   }
 }
 
@@ -279,7 +279,24 @@ outputAll = function(connection, dbms, schema, settings) {
       )
     }
   }
-  return(returnList)
+  ######################
+  # Create set with eligible patients
+  eligiblePatients <- unlist(returnList)
+
+  ######################
+  # Query the data
+
+  sql2 = loadRenderTranslateSql(
+    dbms = dbms,
+    sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
+    schema = schema,
+    eligiblePatients = eligiblePatients
+  )
+
+  returnData <- DatabaseConnector::querySql(connection,
+                                            sql = sql2)
+
+  return(returnData)
 }
 
 
