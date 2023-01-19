@@ -20,6 +20,11 @@ createConnectionSQLite = function(){
 ################################################################################
 #' @export
 createTrajectoriesTable = function(conn, data, schema){
+# We create two tables:
+# 1) patient_trajectories - the table is the same as in the input file
+# 2) exact_patient_trajectories - the table has excluded rows where transitions are made to the same state
+# This is done to optimize the queries
+
   DatabaseConnector::insertTable(connection = conn,
                                  tableName = "patient_trajectories",
                                  databaseSchema = schema,

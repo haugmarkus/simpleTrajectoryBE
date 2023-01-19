@@ -5,9 +5,8 @@ dbms <- "sqlite"
 schema <- "main"
 pathToResults <<- dirname(dirname(getwd())) #
 data = readr::read_csv(paste(pathToResults,"/TestSchemaTrajectories.csv", sep =""))
-connection <- createConnectionSQLite()
 
-test_that("Quering exact trajectories from DB", {
+test_that("Quering all trajectories' statistics table", {
   connection <- createConnectionSQLite()
   createTrajectoriesTable(conn = connection, data = data, schema = schema)
   pathToFile = "/inputUI.csv"

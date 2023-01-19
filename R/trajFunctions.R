@@ -19,7 +19,15 @@ loadRenderTranslateSql <- function(sql,
   else {
     parameterizedSql <- sql
   }
-
+ # FIX FOR
+ # STRING_AGG(postgrsql) and GROUP_CONCAT(sqlite)
+ # TODO add other distinctions
+ if (dbms == "postgresql") {
+   parameterizedSql = stringr::str_replace(parameterizedSql, "GROUP_CONCAT", "STRING_AGG")
+ }
+  else if (dbms == "sqlite") {
+    parameterizedSql = stringr::str_replace(parameterizedSql, "STRING_AGG", "GROUP_CONCAT")
+  }
   renderedSql <-
     SqlRender::render(sql = parameterizedSql, warnOnMissingParameters = warnOnMissingParameters, ...)
   renderedSql <-

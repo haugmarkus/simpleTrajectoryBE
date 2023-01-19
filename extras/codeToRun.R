@@ -87,6 +87,18 @@ length(unique(result$SUBJECT_ID))
 ################################################################################
 result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
 
+
+################################################################################
+#
+# Trajectory inclusion statistics tables
+#
+################################################################################
+
+initialTable <- getDistinctTrajectoriesTable(connection = conn,dbms = dbms,schema = schema)
+
+outputTrajectoryStatisticsTables(dataTable = initialTable, settings = trajSettings)
+
+
 ################################################################################
 #
 # Simple business process map
@@ -126,4 +138,3 @@ eventlog = bupaR::activitylog(activitylog = eventlog, case_id = "SUBJECT_ID",
   )
 # bupaR plot
 processmapR::process_map(eventlog)
-
