@@ -19,7 +19,7 @@ conn <- createConnectionSQLite()
 
 # Write datatable into database
 
-data = readr::read_csv("./TestSchemaTrajectories.csv")
+data = readr::read_csv("./HeartFailuregeneratedTrajectoriesDiscrete.csv")
 
 createTrajectoriesTable(conn = conn, schema = schema, data = data)
 
@@ -43,11 +43,11 @@ createTrajectoriesTable(conn = conn, schema = schema, data = data)
 
 
 # For trajectory with index == 1, all the patients and their data fulfilling the criteria
-result = exactTrajectories(
+result = looseTrajectories(
   connection = conn,
   dbms = dbms,
   schema = schema,
-  ivector = trajSettings[[1]]$INDEX,
+ # ivector = trajSettings[[1]]$INDEX,
   svector = trajSettings[[1]]$STATE
 )
 # head(result)
@@ -94,7 +94,7 @@ result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = t
 #
 ################################################################################
 
-initialTable <- getDistinctTrajectoriesTable(connection = conn,dbms = dbms,schema = schema)
+initialTable <- simpleTrajectoryBE::getDistinctTrajectoriesTable(connection = conn,dbms = dbms,schema = schema)
 
 outputTrajectoryStatisticsTables(dataTable = initialTable, settings = trajSettings)
 

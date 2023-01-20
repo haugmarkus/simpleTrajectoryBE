@@ -11,7 +11,6 @@
 #' @param schema Name of the used schema
 #' @param table Name of the used table
 #' @export
-
 getDistinctTrajectoriesTable <- function(connection, dbms, schema, table = "patient_trajectories") {
 sql <- "SELECT TRAJECTORY, COUNT(*) AS TOTAL FROM (SELECT SUBJECT_ID, GROUP_CONCAT(STATE,'-->') TRAJECTORY FROM (SELECT SUBJECT_ID, STATE, STATE_START_DATE FROM @schema.@table ORDER BY SUBJECT_ID, STATE_START_DATE) tmp1 GROUP BY SUBJECT_ID) tmp2 GROUP BY TRAJECTORY ORDER BY TOTAL DESC;"
 
@@ -43,8 +42,8 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
     )
     return(result)
   }
-  trajDefined <- unlist(lapply(settings, function(dataTable){
-  trajStates <- paste0(dataTable$STATE, collapse = "-->")
+  trajDefined <- unlist(lapply(settings, function(table){
+  trajStates <- paste0(table$STATE, collapse = "-->")
   return(trajStates)
   }))
   indexes <- 1:nrow(dataTable)
@@ -59,7 +58,7 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
 
   result <- list(
     "matching" = dataTable[indexes[matchingVec],],
-    "partiallyMatching" = dataTable[indexes[partiallyMatchingVec - matchingVec],],
+    "partiallyMatching" = dataTable[as.logical(indexes[partiallyMatchingVec - matchingVec]),],
     "notMatching" = dataTable[indexes[!partiallyMatchingVec],]
   )
 

@@ -135,16 +135,15 @@ looseTrajectories <- function(connection, dbms, schema, svector) {
       )
       eligiblePatients <- DatabaseConnector::querySql(connection,
                                                       sql = sql)
-
-      sql2 = loadRenderTranslateSql(
-        dbms = dbms,
-        sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
-        schema = schema,
-        eligiblePatients = eligiblePatients$SUBJECT_ID
-      )
-      returnData <- DatabaseConnector::querySql(connection,
-                                                sql = sql2)
-      return(returnData)
+#       sql2 = loadRenderTranslateSql(
+#         dbms = dbms,
+#         sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
+#         schema = schema,
+#         eligiblePatients = eligiblePatients$SUBJECT_ID
+#       )
+#       returnData <- DatabaseConnector::querySql(connection,
+#                                                 sql = sql2)
+      return(eligiblePatients)
     }
   else {
     tempTableLabels = paste("SimpleBE_", 1:length(svector), "_state", sep = "")
@@ -289,7 +288,7 @@ outputAll = function(connection, dbms, schema, settings) {
   }
   ######################
   # Create set with eligible patients
-  eligiblePatients <- unlist(returnList)
+  eligiblePatients <- unique(unlist(returnList))
 
   ######################
   # Query the data
@@ -300,7 +299,6 @@ outputAll = function(connection, dbms, schema, settings) {
     schema = schema,
     eligiblePatients = eligiblePatients
   )
-
   returnData <- DatabaseConnector::querySql(connection,
                                             sql = sql2)
 
