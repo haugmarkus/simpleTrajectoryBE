@@ -19,7 +19,7 @@ conn <- createConnectionSQLite()
 
 # Write datatable into database
 
-data = readr::read_csv("./HeartFailuregeneratedTrajectoriesDiscrete.csv")
+data = readr::read_csv("./TestSchemaTrajectories.csv")
 
 createTrajectoriesTable(conn = conn, schema = schema, data = data)
 

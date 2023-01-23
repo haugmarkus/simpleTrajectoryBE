@@ -58,7 +58,7 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
 
   result <- list(
     "matching" = dataTable[indexes[matchingVec],],
-    "partiallyMatching" = dataTable[as.logical(indexes[partiallyMatchingVec - matchingVec]),],
+    "partiallyMatching" = dataTable[indexes[as.logical(partiallyMatchingVec - matchingVec)],],
     "notMatching" = dataTable[indexes[!partiallyMatchingVec],]
   )
 

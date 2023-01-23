@@ -35,6 +35,6 @@ test_that("Quering all trajectories' statistics table with settings", {
   dataTable <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
   result <- outputTrajectoryStatisticsTables(dataTable = dataTable, settings = trajSettings)
   DatabaseConnector::disconnect(connection)
-  expect_equal(result$partiallyMatching[1,]$TOTAL, 3000)
+  expect_equal(result$partiallyMatching[1,]$TOTAL, 2000)
 })
 #> Test passed 🥇
