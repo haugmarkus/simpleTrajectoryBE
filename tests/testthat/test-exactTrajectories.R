@@ -8,7 +8,7 @@ data = readr::read_csv(paste(pathToResults,"/TestSchemaTrajectories.csv", sep ="
 
 test_that("Quering all trajectories' statistics table", {
   connection <- createConnectionSQLite()
-  createTrajectoriesTable(conn = connection, data = data, schema = schema)
+  createTrajectoriesTable(conn = connection, dbms = dbms, data = data, schema = schema)
   pathToFile = "/inputUI.csv"
   trajSettings = loadUITrajectories((paste(pathToResults,pathToFile, sep ="")))
   result = exactTrajectories(

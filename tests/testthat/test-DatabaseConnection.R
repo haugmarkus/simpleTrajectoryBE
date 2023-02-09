@@ -16,7 +16,7 @@ test_that("Connect", {
 connection <- createConnectionSQLite()
 
 test_that("Insert table", {
-  createTrajectoriesTable(conn = connection, data = data, schema = schema)
+  createTrajectoriesTable(conn = connection, dbms = dbms, data = data, schema = schema)
   personCount <- DatabaseConnector::querySql(connection, "SELECT COUNT(DISTINCT SUBJECT_ID) FROM main.patient_trajectories;")
   expect_gt(personCount, 0)
 })

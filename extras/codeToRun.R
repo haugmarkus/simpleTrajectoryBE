@@ -21,7 +21,7 @@ conn <- createConnectionSQLite()
 
 data = readr::read_csv("./TestSchemaTrajectories.csv")
 
-createTrajectoriesTable(conn = conn, schema = schema, data = data)
+createTrajectoriesTable(conn = conn,dbms = dbms ,schema = schema, data = data)
 
 ################################################################################
 #
@@ -43,11 +43,11 @@ createTrajectoriesTable(conn = conn, schema = schema, data = data)
 
 
 # For trajectory with index == 1, all the patients and their data fulfilling the criteria
-result = looseTrajectories(
+result = exactTrajectories(
   connection = conn,
   dbms = dbms,
   schema = schema,
- # ivector = trajSettings[[1]]$INDEX,
+  ivector = trajSettings[[1]]$INDEX,
   svector = trajSettings[[1]]$STATE
 )
 # head(result)

@@ -19,18 +19,48 @@ createConnectionSQLite = function(){
 #
 ################################################################################
 #' @export
-createTrajectoriesTable = function(conn, data, schema){
+createTrajectoriesTable = function(conn, dbms, data, schema){
 # We create two tables:
 # 1) patient_trajectories - the table is the same as in the input file
 # 2) exact_patient_trajectories - the table has excluded rows where transitions are made to the same state
 # This is done to optimize the queries
+  ##############################################################################
+  #
+  # DROP tables
+  #
+  ##############################################################################
+  sql_drop <- "DROP TABLE IF EXISTS @schema.@table;"
+
+  sql_drop1 <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql_drop,
+    schema = schema,
+    table = 'patient_trajectories'
+  )
+  DatabaseConnector::executeSql(connection = conn, sql_drop1)
+
+  sql_drop2 <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql_drop,
+    schema = schema,
+    table = 'exact_patient_trajectories'
+  )
+  DatabaseConnector::executeSql(connection = conn, sql_drop2)
+
+  ##############################################################################
+  #
+  # CREATE tables
+  #
+  ##############################################################################
 
   DatabaseConnector::insertTable(connection = conn,
                                  tableName = "patient_trajectories",
                                  databaseSchema = schema,
                                  data = data)
+
   data$TO_STATE = c(data$STATE[2:nrow(data)], "$$not_initialized$$")
   data = dplyr::select(subset(data, STATE != TO_STATE), -TO_STATE)
+
   DatabaseConnector::insertTable(connection = conn,
                                  tableName = "exact_patient_trajectories",
                                  databaseSchema = schema,

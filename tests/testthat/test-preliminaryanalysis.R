@@ -8,7 +8,7 @@ data <- readr::read_csv(paste(pathToResults,"/TestSchemaTrajectories.csv", sep =
 
 test_that("Quering all trajectories' statistics table", {
   connection <- createConnectionSQLite()
-  createTrajectoriesTable(conn = connection, data = data, schema = schema)
+  createTrajectoriesTable(conn = connection, dbms = dbms, data = data, schema = schema)
   pathToFile <- "/inputUI.csv"
   result <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
   DatabaseConnector::disconnect(connection)
@@ -18,7 +18,7 @@ test_that("Quering all trajectories' statistics table", {
 
 test_that("Quering all trajectories' statistics table with no settings", {
   connection <- createConnectionSQLite()
-  createTrajectoriesTable(conn = connection, data = data, schema = schema)
+  createTrajectoriesTable(conn = connection, dbms = dbms, data = data, schema = schema)
   pathToFile <- "/inputUI.csv"
   dataTable <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
   result <- outputTrajectoryStatisticsTables(dataTable = dataTable)
@@ -29,7 +29,7 @@ test_that("Quering all trajectories' statistics table with no settings", {
 
 test_that("Quering all trajectories' statistics table with settings", {
   connection <- createConnectionSQLite()
-  createTrajectoriesTable(conn = connection, data = data, schema = schema)
+  createTrajectoriesTable(conn = connection, dbms = dbms, data = data, schema = schema)
   pathToFile = "/inputUI.csv"
   trajSettings = loadUITrajectories((paste(pathToResults,pathToFile, sep ="")))
   dataTable <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
