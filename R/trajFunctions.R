@@ -37,7 +37,7 @@ loadRenderTranslateSql <- function(sql,
     SqlRender::writeSql(renderedSql, outputFile)
     writeLines(paste("Created file '", outputFile, "'", sep = ""))
   }
-
+  print(renderedSql)
   return(renderedSql)
 }
 

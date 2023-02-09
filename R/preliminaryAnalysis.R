@@ -12,7 +12,7 @@
 #' @param table Name of the used table
 #' @export
 getDistinctTrajectoriesTable <- function(connection, dbms, schema, table = "patient_trajectories") {
-sql <- "SELECT TRAJECTORY, COUNT(*) AS TOTAL FROM (SELECT SUBJECT_ID, GROUP_CONCAT(STATE,'-->') TRAJECTORY FROM (SELECT SUBJECT_ID, STATE, STATE_START_DATE FROM @schema.@table ORDER BY SUBJECT_ID, STATE_START_DATE) tmp1 GROUP BY SUBJECT_ID) tmp2 GROUP BY TRAJECTORY ORDER BY TOTAL DESC;"
+sql <- "SELECT TRAJECTORY, COUNT(*) AS TOTAL FROM (SELECT SUBJECT_ID, GROUP_CONCAT(STATE, '->>') TRAJECTORY FROM (SELECT SUBJECT_ID, STATE, STATE_START_DATE FROM @schema.@table ORDER BY SUBJECT_ID, STATE_START_DATE) tmp1 GROUP BY SUBJECT_ID) tmp2 GROUP BY TRAJECTORY ORDER BY TOTAL DESC;"
 
 sql <- loadRenderTranslateSql(
   dbms = dbms,
@@ -46,14 +46,14 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
   trajDefined <- unlist(lapply(settings, function(table){
   trajStates <- NULL
   if (table$TYPE[1] == 1) {
-  trajStates <- paste0(table$STATE, collapse = "-->")
+  trajStates <- paste0(table$STATE, collapse = "->>")
   }
   if (table$TYPE[1] == 0) {
     trajStates <- c() # Return vector with all relevant trajectories
     for (trajectoryPresent in dataTable$TRAJECTORY) { # We start from looping over all present trajectories
-      trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "-->")[[1]] # Break present trajectory down to states
+      trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]] # Break present trajectory down to states
       i <- 0
-      trajectorySelectedAtomic <- table$STATE #stringr::str_split(trajDefined, pattern = "-->")[[1]]
+      trajectorySelectedAtomic <- table$STATE #stringr::str_split(trajDefined, pattern = "->>")[[1]]
       for (state in trajectorySelectedAtomic) { # Break selected trajectory down to states and loop over states
         if(state %in% trajectoryPresentAtomic){ # Check if state present in present trajectory
           index <- match(state,trajectoryPresentAtomic) # Find first occurrance index

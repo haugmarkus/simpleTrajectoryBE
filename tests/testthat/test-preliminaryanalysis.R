@@ -12,7 +12,7 @@ test_that("Quering all trajectories' statistics table", {
   pathToFile <- "/inputUI.csv"
   result <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
   DatabaseConnector::disconnect(connection)
-  expect_equal(result[5,]$TRAJECTORY, "State1-->State3-->State3-->State4-->State5")
+  expect_equal(result[5,]$TRAJECTORY, "State1->>State3->>State3->>State4->>State5")
 })
 #> Test passed 🥇
 
