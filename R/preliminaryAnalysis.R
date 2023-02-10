@@ -47,6 +47,14 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
   trajStates <- NULL
   if (table$TYPE[1] == 1) {
   trajStates <- paste0(table$STATE, collapse = "->>")
+  trajStates <- c()
+  for (trajectoryPresent in dataTable$TRAJECTORY) {
+  trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]]
+  trajectorySelectedAtomic <- table$STATE
+  if(identical(trajectorySelectedAtomic,trajectoryPresentAtomic[table$INDEX])) {
+    trajStates <- c(trajStates, trajectoryPresent)
+  }
+  }
   }
   if (table$TYPE[1] == 0) {
     trajStates <- c() # Return vector with all relevant trajectories
