@@ -66,12 +66,12 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
         if(state %in% trajectoryPresentAtomic){ # Check if state present in present trajectory
           index <- match(state,trajectoryPresentAtomic) # Find first occurrance index
           i <- i + 1
-          if(index == length(trajectoryPresentAtomic) & i == length(trajectorySelectedAtomic)) { # If we are observing the last element of present trajectory and the state of selected trajectory is also the last one -- return
+          if(index == length(trajectoryPresentAtomic) | i == length(trajectorySelectedAtomic)) { # If we are observing the last element of present trajectory and the state of selected trajectory is also the last one -- return
             trajStates <- c(trajStates, trajectoryPresent) # Add trajectory to return vector
             break
           }
           trajectoryPresentAtomic <- trajectoryPresentAtomic[(match(state,trajectoryPresentAtomic)+1):length(trajectoryPresentAtomic)] # Lets keep the tail of present trajectory
-        }
+          }
         else {break}
       }
     }
@@ -93,7 +93,6 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
     "partiallyMatching" = dataTable[indexes[as.logical(partiallyMatchingVec - matchingVec)],],
     "notMatching" = dataTable[indexes[!partiallyMatchingVec],]
   )
-
   return(result)
   ##############################################################################
   #
