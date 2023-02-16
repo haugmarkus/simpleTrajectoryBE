@@ -65,11 +65,14 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
       for (state in trajectorySelectedAtomic) { # Break selected trajectory down to states and loop over states
         if(state %in% trajectoryPresentAtomic){ # Check if state present in present trajectory
           index <- match(state,trajectoryPresentAtomic) # Find first occurrance index
+          # if (is.na(index)){break}
           i <- i + 1
-          if(index == length(trajectoryPresentAtomic) | i == length(trajectorySelectedAtomic)) { # If we are observing the last element of present trajectory and the state of selected trajectory is also the last one -- return
+          # index == length(trajectoryPresentAtomic) |
+          if (i == length(trajectorySelectedAtomic)) { # If we are observing the last element of present trajectory and the state of selected trajectory is also the last one -- return
             trajStates <- c(trajStates, trajectoryPresent) # Add trajectory to return vector
             break
           }
+          else if (index == length(trajectoryPresentAtomic)) {break}
           trajectoryPresentAtomic <- trajectoryPresentAtomic[(match(state,trajectoryPresentAtomic)+1):length(trajectoryPresentAtomic)] # Lets keep the tail of present trajectory
           }
         else {break}
@@ -79,15 +82,16 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
   return(unique(trajStates))
   }))
   indexes <- 1:nrow(dataTable)
-
   matchingVec <- as.logical(Reduce("+",lapply(trajDefined, function(x){
     x == dataTable$TRAJECTORY
   })))
-
   partiallyMatchingVec <- as.logical(Reduce("+", lapply(trajDefined,function(x){
     grepl(x, dataTable$TRAJECTORY)
   })))
-
+  if (length(matchingVec)==0) {
+    matchingVec <- rep(FALSE, nrow(dataTable))
+    partiallyMatchingVec <- rep(FALSE, nrow(dataTable))
+  }
   result <- list(
     "matching" = dataTable[indexes[matchingVec],],
     "partiallyMatching" = dataTable[indexes[as.logical(partiallyMatchingVec - matchingVec)],],
