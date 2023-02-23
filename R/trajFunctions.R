@@ -37,7 +37,6 @@ loadRenderTranslateSql <- function(sql,
     SqlRender::writeSql(renderedSql, outputFile)
     writeLines(paste("Created file '", outputFile, "'", sep = ""))
   }
-  print(renderedSql)
   return(renderedSql)
 }
 
@@ -52,6 +51,9 @@ loadRenderTranslateSql <- function(sql,
 exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
   if (length(ivector) != length(svector)) {
     return(message("Vector length not equal!"))
+  }
+  else if (!all(sort(ivector) == 1:length(ivector))){
+    return(c())
   }
   else {
 
@@ -100,16 +102,6 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
 
     eligiblePatients <- DatabaseConnector::querySql(connection,
                                                     sql = sql)
-
-    # sql2 = loadRenderTranslateSql(
-    #   dbms = dbms,
-    #   sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
-    #   schema = schema,
-    #   eligiblePatients = eligiblePatients$SUBJECT_ID
-    # )
-    #
-    # returnData <- DatabaseConnector::querySql(connection,
-    #                                     sql = sql2)
 
     return(eligiblePatients)
   }
@@ -234,16 +226,6 @@ INNER JOIN ",
     eligiblePatients <- DatabaseConnector::querySql(connection,
                                                     sql = paste("SELECT subject_id FROM ", tempTableLabels[length(tempTableLabels)], ";"))
 
-    # sql2 = loadRenderTranslateSql(
-    #   dbms = dbms,
-    #   sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
-    #   schema = schema,
-    #   eligiblePatients = eligiblePatients$SUBJECT_ID
-    # )
-    #
-    # returnData <- DatabaseConnector::querySql(connection,
-    #                                           sql = sql2)
-
     return(eligiblePatients)
   }
 }
@@ -304,5 +286,48 @@ outputAll = function(connection, dbms, schema, settings) {
 
   return(returnData)
 }
+
+
+
+#' Query all trajectories defined in the matching table as matches
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @param trajectories The matches in the matching table
+#' @export
+importTrajectoryData = function(connection, dbms, schema, trajectories) {
+  returnList = list()
+  if (nrow(trajectories) > 0) {
+    for (i in 1:nrow(trajectories)) {
+      trajectoryAtomic <- stringr::str_split(trajectories[,i], pattern = "->>")[[1]]
+      returnList[[i]] = exactTrajectories(
+        connection = connection,
+        dbms = dbms,
+        schema = schema,
+        ivector = 1:length(trajectoryAtomic),
+        svector = trajectoryAtomic
+      )
+    }
+  }
+  ######################
+  # Create set with eligible patients
+  eligiblePatients <- unique(unlist(returnList))
+
+  ######################
+  # Query the data
+
+  sql2 = loadRenderTranslateSql(
+    dbms = dbms,
+    sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
+    schema = schema,
+    eligiblePatients = eligiblePatients
+  )
+  returnData <- DatabaseConnector::querySql(connection,
+                                            sql = sql2)
+
+  return(returnData)
+}
+
 
 

@@ -46,13 +46,13 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
   trajDefined <- unlist(lapply(settings, function(table){
   trajStates <- NULL
   if (table$TYPE[1] == 1) {
-  trajStates <- paste0(table$STATE, collapse = "->>")
   trajStates <- c()
   for (trajectoryPresent in dataTable$TRAJECTORY) {
   trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]]
   trajectorySelectedAtomic <- table$STATE
   if(identical(trajectorySelectedAtomic,trajectoryPresentAtomic[table$INDEX])) {
-    trajStates <- c(trajStates, trajectoryPresent)
+    trajectoryCollapsed <- paste0(trajectoryPresentAtomic[1:max(table$INDEX)], collapse = "->>") #paste0(trajectorySelectedAtomic, collapse = "->>")
+    trajStates <- c(trajStates, trajectoryCollapsed)
   }
   }
   }

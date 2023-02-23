@@ -19,7 +19,7 @@ conn <- createConnectionSQLite()
 
 # Write datatable into database
 
-data = readr::read_csv("./TestSchemaTrajectories.csv")
+data = readr::read_csv("/home/markus/R-packages/simpleTrajectoryBE/TestSchemaTrajectories.csv")
 
 createTrajectoriesTable(conn = conn,dbms = dbms ,schema = schema, data = data)
 
@@ -78,14 +78,6 @@ length(unique(result$SUBJECT_ID))
 # head(result)
 # length(unique(result$SUBJECT_ID))
 
-################################################################################
-#
-# Output all trajectories defined in inputUI.csv
-#
-#
-#
-################################################################################
-result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
 
 
 ################################################################################
@@ -96,8 +88,21 @@ result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = t
 
 initialTable <- simpleTrajectoryBE::getDistinctTrajectoriesTable(connection = conn,dbms = dbms,schema = schema)
 
-outputTrajectoryStatisticsTables(dataTable = initialTable, settings = trajSettings)
+matchTable <- outputTrajectoryStatisticsTables(dataTable = initialTable, settings = trajSettings)
 
+# Anda andmebaasile ette matching?
+
+################################################################################
+#
+# Output all trajectories defined in inputUI.csv
+#
+#
+#
+################################################################################
+matchTable$matching
+result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
+result = importTrajectoryData(connection = conn, dbms = dbms, schema = schema, trajectories = matchTable$matching)
+nrow(result)
 
 ################################################################################
 #
