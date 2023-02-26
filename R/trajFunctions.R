@@ -301,7 +301,7 @@ importTrajectoryData = function(connection, dbms, schema, trajectories) {
   print(trajectories)
   if (nrow(trajectories) > 0) {
     for (i in 1:nrow(trajectories)) {
-      trajectoryAtomic <- stringr::str_split(trajectories[,i], pattern = "->>")[[1]]
+      trajectoryAtomic <- stringr::str_split(trajectories[i,]$TRAJECTORY, pattern = "->>")[[1]]
       returnList[[i]] = exactTrajectories(
         connection = connection,
         dbms = dbms,
