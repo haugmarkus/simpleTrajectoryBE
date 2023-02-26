@@ -50,6 +50,7 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
   for (trajectoryPresent in dataTable$TRAJECTORY) {
   trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]]
   trajectorySelectedAtomic <- table$STATE
+
   if(identical(trajectorySelectedAtomic,trajectoryPresentAtomic[table$INDEX])) {
     trajectoryCollapsed <- paste0(trajectoryPresentAtomic[1:max(table$INDEX)], collapse = "->>") #paste0(trajectorySelectedAtomic, collapse = "->>")
     trajStates <- c(trajStates, trajectoryCollapsed)
@@ -59,17 +60,20 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
   if (table$TYPE[1] == 0) {
     trajStates <- c() # Return vector with all relevant trajectories
     for (trajectoryPresent in dataTable$TRAJECTORY) { # We start from looping over all present trajectories
-      trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]] # Break present trajectory down to states
+      trajectoryPresentAtomicOriginal <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]] # Break present trajectory down to states
+      trajectoryPresentAtomic <- trajectoryPresentAtomicOriginal
       i <- 0
+      k <- 0 # for iterating the trajectoryPresent variable
       trajectorySelectedAtomic <- table$STATE #stringr::str_split(trajDefined, pattern = "->>")[[1]]
       for (state in trajectorySelectedAtomic) { # Break selected trajectory down to states and loop over states
         if(state %in% trajectoryPresentAtomic){ # Check if state present in present trajectory
           index <- match(state,trajectoryPresentAtomic) # Find first occurrance index
           # if (is.na(index)){break}
           i <- i + 1
+          k <- k + index
           # index == length(trajectoryPresentAtomic) |
           if (i == length(trajectorySelectedAtomic)) { # If we are observing the last element of present trajectory and the state of selected trajectory is also the last one -- return
-            trajStates <- c(trajStates, trajectoryPresent) # Add trajectory to return vector
+            trajStates <- c(trajStates, paste0( trajectoryPresentAtomicOriginal[1:k], collapse = "->>") ) # Add trajectory to return vector
             break
           }
           else if (index == length(trajectoryPresentAtomic)) {break}
