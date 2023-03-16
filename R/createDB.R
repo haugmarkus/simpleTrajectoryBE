@@ -18,6 +18,11 @@ createConnectionSQLite = function(){
 # Create table 'patient_trajectories' into the database
 #
 ################################################################################
+
+#' @param conn Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param data Imported data
+#' @param schema Name of the used schema
 #' @export
 createTrajectoriesTable = function(conn, dbms, data, schema){
 # We create two tables:

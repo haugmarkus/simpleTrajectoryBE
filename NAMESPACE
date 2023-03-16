@@ -2,10 +2,8 @@
 
 export(createConnectionSQLite)
 export(createTrajectoriesTable)
-export(exactTrajectories)
 export(getDistinctTrajectoriesTable)
 export(importTrajectoryData)
 export(loadUITrajectories)
-export(looseTrajectories)
-export(outputAll)
 export(outputTrajectoryStatisticsTables)
+export(removeBeforeDataset)
