@@ -298,7 +298,6 @@ outputAll = function(connection, dbms, schema, settings) {
 #' @export
 importTrajectoryData = function(connection, dbms, schema, trajectories) {
   returnList = list()
-  print(trajectories)
   if (nrow(trajectories) > 0) {
     for (i in 1:nrow(trajectories)) {
       trajectoryAtomic <- stringr::str_split(trajectories[i,]$TRAJECTORY, pattern = "->>")[[1]]
