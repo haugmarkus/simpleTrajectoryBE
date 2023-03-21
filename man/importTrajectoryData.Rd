@@ -29,7 +29,7 @@ importTrajectoryData(connection, dbms, schema, trajectories)
 \description{
 \preformatted{  sql = loadRenderTranslateSql(
     dbms = dbms,
-    sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE = '",svector[1], "';", sep = ""),
+    sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE_LABEL = '",svector[1], "';", sep = ""),
     schema = schema
   )
   eligiblePatients <- DatabaseConnector::querySql(connection,

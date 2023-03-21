@@ -9,19 +9,52 @@ library(simpleTrajectoryBE)
 pathToFile = "./inputUI.csv"
 trajSettings = loadUITrajectories(pathToFile)
 
-# Database conf
-dbms = "sqlite"
-schema = "main"
 
-# Creating connection to database
+################################################################################
+#
+# Create connection to database
+#
+################################################################################
+dbExists <- FALSE
 
-conn <- createConnectionSQLite()
+connection <- NULL
+
+if(dbExists) {
+  ################################################################################
+  #
+  # Database credentials
+  #
+  ################################################################################
+  pathToDriver <- './Drivers'
+  dbms <- "postgresql" #TODO
+  user <- '' #TODO
+  pw <- "" #TODO
+  server <- 'localhost/database' #TODO
+  port <- '5432' #TODO
+  schema <- '' #TODO
+  connectionDetails <-
+    DatabaseConnector::createConnectionDetails(
+      dbms = dbms,
+      server = server,
+      user = user,
+      password = pw,
+      port = port,
+      pathToDriver = pathToDriver
+    )
+
+  connection <- DatabaseConnector::connect(connectionDetails)
+} else {
+  dbms = "sqlite"
+  schema = "main"
+  # Creating connection to database
+  connection <- createConnectionSQLite()
+}
 
 # Write datatable into database
 
 data = readr::read_csv("TestSchemaTrajectories.csv")
 
-createTrajectoriesTable(conn = conn,dbms = dbms ,schema = schema, data = data)
+createTrajectoriesTable(conn = connection,dbms = dbms ,schema = schema, data = data)
 
 ################################################################################
 #
@@ -29,19 +62,16 @@ createTrajectoriesTable(conn = conn,dbms = dbms ,schema = schema, data = data)
 #
 ################################################################################
 
-initialTable <- simpleTrajectoryBE::getDistinctTrajectoriesTable(connection = conn,dbms = dbms,schema = schema)
+initialTable <- simpleTrajectoryBE::getDistinctTrajectoriesTable(connection = connection,dbms = dbms,schema = schema)
 matchTable <- outputTrajectoryStatisticsTables(dataTable = initialTable, settings = trajSettings)
-
-# Anda andmebaasile ette matching?
 
 ################################################################################
 #
 # Output all trajectories defined in inputUI.csv
 #
 ################################################################################
-matchTable$matching
-result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
-result = importTrajectoryData(connection = conn, dbms = dbms, schema = schema, trajectories = matchTable$matching)
+# result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
+result = importTrajectoryData(connection = connection, dbms = dbms, schema = schema, trajectories = matchTable$matching)
 nrow(result)
 
 
@@ -52,26 +82,63 @@ nrow(result)
 ################################################################################
 
 
-# Whole data proccessing process 16.03.2023
 # Test data
-data = readr::read_csv("TestSchemaTrajectories.csv")
-testDBQueries <- data.frame(matrix(ncol = 4, nrow = 0))
-n <- 10 # nr of runs
-
+data = readr::read_csv("/home/mhaug/PCASynth.csv")
+pathToFile = "./inputUITEST.csv"
+trajSettings = loadUITrajectories(pathToFile)
+#~/R-packages/Cohort2Trajectory/tmp/datasets/Target660patientDataPriority.csv
+names(data)[names(data) == 'STATE'] <- 'STATE_LABEL'
+testDBQueries <- data.frame(matrix(ncol = 5, nrow = 0))
+n <- 5 # nr of runs
+library(dplyr)
 for ( i in (1:n)) {
   subjects <- length(unique(data$SUBJECT_ID))
   rows <- nrow(data)
   run <- system.time({
-  createTrajectoriesTable(conn = conn,dbms = dbms ,schema = schema, data = data)
-  initialTable <- simpleTrajectoryBE::getDistinctTrajectoriesTable(connection = conn,dbms = dbms,schema = schema)
+  createTrajectoriesTable(conn = connection,dbms = dbms ,schema = schema, data = data)
+  initialTable <- simpleTrajectoryBE::getDistinctTrajectoriesTable(connection = connection,dbms = dbms,schema = schema)
   matchTable <- outputTrajectoryStatisticsTables(dataTable = initialTable, settings = trajSettings)
-  importTrajectoryData(connection = conn, dbms = dbms, schema = schema, trajectories = matchTable$matching)
+  importTrajectoryData(connection = connection, dbms = dbms, schema = schema, trajectories = matchTable$matching)
   })
-  row <- t(as.data.frame(c(data.matrix(run)[1:3], subjects, rows)))
+  row <- t(as.data.frame(c(data.matrix(run)[1:3], subjects, rows, "queryPatients")))
   testDBQueries <- rbind(testDBQueries, row)
 }
-colnames(testDBQueries) <- c("user", "system", "elapsed", "subjects", "rows")
+colnames(testDBQueries) <- c("user", "system", "elapsed", "subjects", "rows", "testType")
 rownames(testDBQueries) = NULL
-mean(testDBQueries$elapsed) #1.3
+testDBQueries %>% filter(testType == 'queryPatients') %>% select(elapsed) %>% as.vector() %>% unlist() %>% as.numeric() %>% mean()
+
+# Clicking on some edge and running before DPLYR
+
+testRemovalQueries <- data.frame(matrix(ncol = 5, nrow = 0))
+for ( i in (1:n)) {
+  subjects <- length(unique(data$SUBJECT_ID))
+  rows <- nrow(data)
+  user.avg <- 0
+  system.avg <- 0
+  elapsed.avg <- 0
+  for (state in unique(data$STATE_LABEL)) {
+    run <- system.time({
+     removeBeforeDataset(data, state)
+    })
+  user.avg <- user.avg + as.numeric(run[1])
+  system.avg <- system.avg + as.numeric(run[2])
+  elapsed.avg <- elapsed.avg + as.numeric(run[3])
+  }
+  row <- t(as.data.frame(c(user.avg/n,system.avg/n,elapsed.avg/n, subjects, rows, 'removeBefore')))
+  testRemovalQueries <- rbind(testRemovalQueries, row)
+}
+colnames(testRemovalQueries) <- c("user", "system", "elapsed", "subjects", "rows", "testType")
+rownames(testRemovalQueries) = NULL
+mean(as.numeric(testRemovalQueries$elapsed))
+
+dataTest <- rbind(testDBQueries,testRemovalQueries)
+dataTest$dataset = 'pca'
+dataTest$database = 'postgres'
+result =  rbind(result, dataTest)
+unique(result$database)
 
 
+result %>% filter(testType == 'queryPatients') %>% select(elapsed) %>% as.vector() %>% unlist() %>% as.numeric() %>% mean()
+result %>% filter(testType == 'removeBefore') %>% filter(dataset == 'pca') %>% select(elapsed) %>% as.vector() %>% unlist() %>% as.numeric() %>% mean()
+
+trajectories = matchTable$matching

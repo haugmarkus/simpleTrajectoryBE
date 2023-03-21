@@ -8,7 +8,7 @@ getDistinctTrajectoriesTable(
   connection,
   dbms,
   schema,
-  table = "patient_trajectories"
+  table = "patient_trajectories_combined"
 )
 }
 \arguments{

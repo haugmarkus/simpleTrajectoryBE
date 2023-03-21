@@ -27,6 +27,7 @@ loadRenderTranslateSql <- function(sql,
  }
   else if (dbms == "sqlite") {
     parameterizedSql = stringr::str_replace(parameterizedSql, "STRING_AGG", "GROUP_CONCAT")
+    parameterizedSql = stringr::str_replace(parameterizedSql, "ARRAY_AGG", "GROUP_CONCAT")
   }
   renderedSql <-
     SqlRender::render(sql = parameterizedSql, warnOnMissingParameters = warnOnMissingParameters, ...)
@@ -65,14 +66,14 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
         sql,
         "select distinct SUBJECT_ID
                from (SELECT SUBJECT_ID,
-                            STATE,
+                            STATE_LABEL,
                             STATE_START_DATE,
                             ROW_NUMBER()
                             OVER (PARTITION BY SUBJECT_ID ORDER BY SUBJECT_ID, STATE_START_DATE) as s_index
                      FROM @schema.@table) i
                where s_index =",
         ivector[index],
-        " and STATE ='",
+        " and STATE_LABEL ='",
         svector[index],
         "'", sep = "")
 
@@ -88,7 +89,7 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
 
     sql = paste(
       sql,
-      ") as 'SUBJECT_ID';"
+      ') as "SUBJECT_ID";'
     )
 
     table = if (checker == 0) "exact_patient_trajectories" else "patient_trajectories"
@@ -123,7 +124,7 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
 #'
 #'       sql = loadRenderTranslateSql(
 #'         dbms = dbms,
-#'         sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE = '",svector[1], "';", sep = ""),
+#'         sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE_LABEL = '",svector[1], "';", sep = ""),
 #'         schema = schema
 #'       )
 #'       eligiblePatients <- DatabaseConnector::querySql(connection,
@@ -166,9 +167,9 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
 #'                   SELECT
 #'                   subject_id, state,
 #'                   ROW_NUMBER() OVER(PARTITION BY subject_id ORDER BY subject_id, state_start_date) as s_index
-#'                   FROM @schema.patient_trajectories) a WHERE state = '",
+#'                   FROM @schema.patient_trajectories) a WHERE STATE_LABEL = '",
 #'       svector[1],
-#'       "' GROUP BY subject_id, state;",
+#'       "' GROUP BY subject_id, STATE_LABEL;",
 #'       sep = ""
 #'     )
 #'
@@ -202,17 +203,17 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
 #'         "CREATE TEMP TABLE ",
 #'         tempTableLabels[index],
 #'         " AS
-#' SELECT forth.subject_id as subject_id, forth.state as state, MIN(forth.s_index) as s_index from (
-#' SELECT subject_id, state, s_index FROM (
+#' SELECT forth.subject_id as subject_id, forth.STATE_LABEL as STATE_LABEL, MIN(forth.s_index) as s_index from (
+#' SELECT subject_id, STATE_LABEL, s_index FROM (
 #'                                                            SELECT
-#'                                                                subject_id, state,
+#'                                                                subject_id, STATE_LABEL,
 #'                                                                ROW_NUMBER() OVER(PARTITION BY subject_id ORDER BY subject_id, state_start_date) as s_index
-#'                                                            FROM @schema.patient_trajectories) a WHERE state = '",
+#'                                                            FROM @schema.patient_trajectories) a WHERE STATE_LABEL = '",
 #'         svector[index],
 #'         "') forth
 #' INNER JOIN ",
 #'         tempTableLabels[index - 1],
-#'         " fro ON fro.subject_id = forth.subject_id WHERE fro.s_index < forth.s_index GROUP BY forth.subject_id, forth.state;",
+#'         " fro ON fro.subject_id = forth.subject_id WHERE fro.s_index < forth.s_index GROUP BY forth.subject_id, forth.STATE_LABEL;",
 #'         sep = ""
 #'       )
 #'
@@ -255,7 +256,7 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
 #'         connection = connection,
 #'         dbms = dbms,
 #'         schema = schema,
-#'         svector = settings[[traj]]$STATE
+#'         svector = settings[[traj]]$STATE_LABEL
 #'       )
 #'     }
 #'     if (settings[[traj]]$TYPE[1] == 1) {
@@ -265,7 +266,7 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
 #'         dbms = dbms,
 #'         schema = schema,
 #'         ivector = settings[[traj]]$INDEX,
-#'         svector = settings[[traj]]$STATE
+#'         svector = settings[[traj]]$STATE_LABEL
 #'       )
 #'     }
 #'   }
@@ -298,36 +299,45 @@ exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
 #' @param trajectories The matches in the matching table
 #' @export
 importTrajectoryData = function(connection, dbms, schema, trajectories) {
-  returnList = list()
-  if (nrow(trajectories) > 0) {
-    for (i in 1:nrow(trajectories)) {
-      trajectoryAtomic <- stringr::str_split(trajectories[i,]$TRAJECTORY, pattern = "->>")[[1]]
-      returnList[[i]] = exactTrajectories(
-        connection = connection,
-        dbms = dbms,
-        schema = schema,
-        ivector = 1:length(trajectoryAtomic),
-        svector = trajectoryAtomic
-      )
-    }
-  }
+  # returnList = list()
+  # if (nrow(trajectories) > 0) {
+  #   for (i in 1:nrow(trajectories)) {
+  #     trajectoryAtomic <- stringr::str_split(trajectories[i,]$TRAJECTORY, pattern = "->>")[[1]]
+  #     returnList[[i]] = exactTrajectories(
+  #       connection = connection,
+  #       dbms = dbms,
+  #       schema = schema,
+  #       ivector = 1:length(trajectoryAtomic),
+  #       svector = trajectoryAtomic
+  #     )
+  #   }
+  # }
 ################################################################################
 # Create a set with eligible patients
 ################################################################################
-  eligiblePatients <- unique(unlist(returnList))
+  # eligiblePatients <- unique(unlist(returnList))
 
 ################################################################################
 # Querying the data
 ################################################################################
-
-  sql2 = loadRenderTranslateSql(
+  if(dbms != 'sqlite') {
+  sql = loadRenderTranslateSql(
     dbms = dbms,
-    sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
+    sql = "SELECT * FROM @schema.patient_trajectories WHERE subject_id = ANY(SELECT unnest(subject_ids) from @schema.patient_trajectories_combined where trajectory IN (@trajectories));",
     schema = schema,
-    eligiblePatients = eligiblePatients
+    trajectories = paste0("'", paste(trajectories$TRAJECTORY, collapse = "','"), "'")
   )
+  } else {
+    sql = loadRenderTranslateSql(
+      dbms = dbms,
+      sql = "SELECT * FROM @schema.patient_trajectories WHERE subject_id IN (SELECT CAST(subject_id AS INTEGER) FROM (SELECT DISTINCT subject_ids FROM @schema.patient_trajectories_combined WHERE trajectory IN (@trajectories)  ) AS x WHERE ',' || x.subject_ids || ',' LIKE '%,' || CAST(patient_trajectories.subject_id AS TEXT) || ',%');",
+      schema = schema,
+      trajectories = paste0("'", paste(trajectories$TRAJECTORY, collapse = "','"), "'")
+    )
+  }
+
   returnData <- DatabaseConnector::querySql(connection,
-                                            sql = sql2)
+                                            sql = sql)
 
   return(returnData)
 }
@@ -338,7 +348,7 @@ importTrajectoryData = function(connection, dbms, schema, trajectories) {
 #' @param selectedState Selected state
 #' @export
 removeBeforeDataset <- function(dataset, selectedState) {
-  if (!selectedState %in% unique(dataset$STATE)) {
+  if (!selectedState %in% unique(dataset$STATE_LABEL)) {
     return(dataset)
   }
 
@@ -346,7 +356,7 @@ removeBeforeDataset <- function(dataset, selectedState) {
   dataset$STATE_START_DATE <- as.Date(dataset$STATE_START_DATE)
   dataIndex <-
     dplyr::select(data.frame(dplyr::slice(
-      dplyr::filter(dplyr::group_by(dataset, SUBJECT_ID), STATE == selectedState),
+      dplyr::filter(dplyr::group_by(dataset, SUBJECT_ID), STATE_LABEL == selectedState),
       which.min(STATE_START_DATE)
     )), SUBJECT_ID, STATE_START_DATE)
   returnData <- dplyr::left_join(dataset, dataIndex, by = "SUBJECT_ID")
@@ -354,11 +364,11 @@ removeBeforeDataset <- function(dataset, selectedState) {
   # Removing states occurring before
   returnData <-
     dplyr::select(
-      dplyr::filter(returnData, STATE_START_DATE.y < STATE_START_DATE.x | STATE == selectedState),
+      dplyr::filter(returnData, STATE_START_DATE.y < STATE_START_DATE.x | STATE_LABEL == selectedState),
       -STATE_START_DATE.y
     )
 
-  colnames(returnData) <- c("SUBJECT_ID", "STATE", "STATE_START_DATE", "STATE_END_DATE")
+  colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE")
 
   return(returnData)
 }

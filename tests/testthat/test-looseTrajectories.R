@@ -15,7 +15,7 @@
 #     connection = connection,
 #     dbms = dbms,
 #     schema = schema,
-#     svector = trajSettings[[1]]$STATE
+#     svector = trajSettings[[1]]$STATE_LABEL
 #   )
 #   DatabaseConnector::disconnect(connection)
 #   expect_equal(length(unique(result$SUBJECT_ID)), 4000)

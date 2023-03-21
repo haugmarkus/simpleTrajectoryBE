@@ -11,8 +11,8 @@
 #' @param schema Name of the used schema
 #' @param table Name of the used table
 #' @export
-getDistinctTrajectoriesTable <- function(connection, dbms, schema, table = "patient_trajectories") {
-sql <- "SELECT TRAJECTORY, COUNT(*) AS TOTAL FROM (SELECT SUBJECT_ID, GROUP_CONCAT(STATE, '->>') TRAJECTORY FROM (SELECT SUBJECT_ID, STATE, STATE_START_DATE FROM @schema.@table ORDER BY SUBJECT_ID, STATE_START_DATE) tmp1 GROUP BY SUBJECT_ID) tmp2 GROUP BY TRAJECTORY ORDER BY TOTAL DESC;"
+getDistinctTrajectoriesTable <- function(connection, dbms, schema, table = "patient_trajectories_combined") {
+sql <- "SELECT trajectory, total FROM @schema.@table;"
 
 sql <- loadRenderTranslateSql(
   dbms = dbms,
@@ -49,7 +49,7 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
   trajStates <- c()
   for (trajectoryPresent in dataTable$TRAJECTORY) {
   trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]]
-  trajectorySelectedAtomic <- table$STATE
+  trajectorySelectedAtomic <- table$STATE_LABEL
 
   if(identical(trajectorySelectedAtomic,trajectoryPresentAtomic[table$INDEX])) {
     trajectoryCollapsed <- paste0(trajectoryPresentAtomic[1:max(table$INDEX)], collapse = "->>") #paste0(trajectorySelectedAtomic, collapse = "->>")
@@ -64,7 +64,7 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
       trajectoryPresentAtomic <- trajectoryPresentAtomicOriginal
       i <- 0
       k <- 0 # for iterating the trajectoryPresent variable
-      trajectorySelectedAtomic <- table$STATE #stringr::str_split(trajDefined, pattern = "->>")[[1]]
+      trajectorySelectedAtomic <- table$STATE_LABEL #stringr::str_split(trajDefined, pattern = "->>")[[1]]
       for (state in trajectorySelectedAtomic) { # Break selected trajectory down to states and loop over states
         if(state %in% trajectoryPresentAtomic){ # Check if state present in present trajectory
           index <- match(state,trajectoryPresentAtomic) # Find first occurrance index

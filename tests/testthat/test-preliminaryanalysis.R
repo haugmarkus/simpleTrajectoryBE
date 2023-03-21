@@ -12,7 +12,7 @@ test_that("Quering all trajectories' statistics table", {
   pathToFile <- "/inputUI.csv"
   result <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
   DatabaseConnector::disconnect(connection)
-  expect_equal(result[5,]$TRAJECTORY, "State1->>State3->>State3->>State4->>State5")
+  expect_equal(result[5,]$TRAJECTORY, "State1->>State4->>State5")
 })
 #> Test passed 🥇
 
@@ -23,7 +23,7 @@ test_that("Quering all trajectories' statistics table with no settings", {
   dataTable <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
   result <- outputTrajectoryStatisticsTables(dataTable = dataTable)
   DatabaseConnector::disconnect(connection)
-  expect_equal(result$notMatching[3,]$PERC, "20%")
+  expect_equal(result$notMatching[3,]$PERC, "10%")
 })
 #> Test passed 🥇
 
