@@ -15,7 +15,7 @@ trajSettings = loadUITrajectories(pathToFile)
 # Create connection to database
 #
 ################################################################################
-dbExists <- FALSE
+dbExists <- TRUE
 
 connection <- NULL
 
@@ -27,11 +27,11 @@ if(dbExists) {
   ################################################################################
   pathToDriver <- './Drivers'
   dbms <- "postgresql" #TODO
-  user <- '' #TODO
+  user <- 'mhaug' #TODO
   pw <- "" #TODO
-  server <- 'localhost/database' #TODO
+  server <- '172.17.64.158/coriva' #TODO
   port <- '5432' #TODO
-  schema <- '' #TODO
+  schema <- 'ohdsi_temp' #TODO
   connectionDetails <-
     DatabaseConnector::createConnectionDetails(
       dbms = dbms,
@@ -53,9 +53,14 @@ if(dbExists) {
 # Write datatable into database
 
 data = readr::read_csv("TestSchemaTrajectories.csv")
-
+#data = readr::read_csv("CovidTrajectoriesContinuous.csv")
+data = dplyr::select(data, SUBJECT_ID, STATE, STATE_START_DATE, STATE_END_DATE)
+data = dplyr::filter(data, (STATE %in% c("START", "EXIT")))
 createTrajectoriesTable(conn = connection,dbms = dbms ,schema = schema, data = data)
 
+head(getEdgesDataset(connection, dbms,schema))
+
+removeBeforeDatasetDB(connection = connection, dbms,schema, "State2")
 ################################################################################
 #
 # Trajectory inclusion statistics tables
@@ -71,7 +76,7 @@ matchTable <- outputTrajectoryStatisticsTables(dataTable = initialTable, setting
 #
 ################################################################################
 # result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
-result = importTrajectoryData(connection = connection, dbms = dbms, schema = schema, trajectories = matchTable$matching)
+result = importTrajectoryData(connection = connection, dbms = dbms, schema = schema, trajectories = matchTable$notMatching)
 nrow(result)
 
 

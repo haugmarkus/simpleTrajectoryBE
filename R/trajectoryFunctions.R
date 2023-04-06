@@ -41,255 +41,72 @@ loadRenderTranslateSql <- function(sql,
   return(renderedSql)
 }
 
-#' Query patients from the database according to the exact trajectories specified in GUI
-#'
-#' @param connection Connection to the database (DatabaseConnector)
-#' @param dbms The database management system
-#' @param schema Schema in the database where the tables are located
-#' @param svector The names of the states which form the observed trajectory
-#' @param ivector The moments in time when the state occurs
-#' @internal
-exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
-  if (length(ivector) != length(svector)) {
-    return(message("Vector length not equal!"))
-  }
-  else if (!all(sort(ivector) == 1:length(ivector))){
-    return(c())
-  }
-  else {
-
-    sql = "select * from ("
-    # Check for two same states in a row
-    checker = 0
-    for (index in 1:length(ivector)) {
-      sql = paste(
-        sql,
-        "select distinct SUBJECT_ID
-               from (SELECT SUBJECT_ID,
-                            STATE_LABEL,
-                            STATE_START_DATE,
-                            ROW_NUMBER()
-                            OVER (PARTITION BY SUBJECT_ID ORDER BY SUBJECT_ID, STATE_START_DATE) as s_index
-                     FROM @schema.@table) i
-               where s_index =",
-        ivector[index],
-        " and STATE_LABEL ='",
-        svector[index],
-        "'", sep = "")
-
-
-        if (index != length(ivector)) {
-          sql = paste(sql, "INTERSECT ")
-        }
-        if (index > 1 && svector[index] == svector[index-1]){
-          checker = 1
-        }
-
-    }
-
-    sql = paste(
-      sql,
-      ') as "SUBJECT_ID";'
-    )
-
-    table = if (checker == 0) "exact_patient_trajectories" else "patient_trajectories"
-
-    sql = loadRenderTranslateSql(
-      dbms = dbms,
-      sql = sql,
-      schema = schema,
-      table = table
-    )
-
-    eligiblePatients <- DatabaseConnector::querySql(connection,
-                                                    sql = sql)
-
-    return(eligiblePatients)
-  }
-}
-
-## DEPRECATED!
-#' #' Query patients from the database according to the loose trajectories specified in GUI
+#' #' Query patients from the database according to the exact trajectories specified in GUI
 #' #'
 #' #' @param connection Connection to the database (DatabaseConnector)
 #' #' @param dbms The database management system
 #' #' @param schema Schema in the database where the tables are located
 #' #' @param svector The names of the states which form the observed trajectory
-#' #' @export
-#' looseTrajectories <- function(connection, dbms, schema, svector) {
-#'   if (length(svector) < 1) {
-#'     return(message("Vector length smaller than 1!"))
+#' #' @param ivector The moments in time when the state occurs
+#' #' @internal
+#' exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
+#'   if (length(ivector) != length(svector)) {
+#'     return(message("Vector length not equal!"))
 #'   }
-#'   if (length(svector) == 1) {
-#'
-#'       sql = loadRenderTranslateSql(
-#'         dbms = dbms,
-#'         sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE_LABEL = '",svector[1], "';", sep = ""),
-#'         schema = schema
-#'       )
-#'       eligiblePatients <- DatabaseConnector::querySql(connection,
-#'                                                       sql = sql)
-#' #       sql2 = loadRenderTranslateSql(
-#' #         dbms = dbms,
-#' #         sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
-#' #         schema = schema,
-#' #         eligiblePatients = eligiblePatients$SUBJECT_ID
-#' #       )
-#' #       returnData <- DatabaseConnector::querySql(connection,
-#' #                                                 sql = sql2)
-#'       return(eligiblePatients)
-#'     }
+#'   else if (!all(sort(ivector) == 1:length(ivector))){
+#'     return(c())
+#'   }
 #'   else {
-#'     tempTableLabels = paste("SimpleBE_", 1:length(svector), "_state", sep = "")
 #'
-#'     ############################################################################
-#'     #
-#'     # Let's delete the temp table if it already exists
-#'     #
-#'     ############################################################################
+#'     sql = "select * from ("
+#'     # Check for two same states in a row
+#'     checker = 0
+#'     for (index in 1:length(ivector)) {
+#'       sql = paste(
+#'         sql,
+#'         "select distinct SUBJECT_ID
+#'                from (SELECT SUBJECT_ID,
+#'                             STATE_LABEL,
+#'                             STATE_START_DATE,
+#'                             ROW_NUMBER()
+#'                             OVER (PARTITION BY SUBJECT_ID ORDER BY SUBJECT_ID, STATE_START_DATE) as s_index
+#'                      FROM @schema.@table) i
+#'                where s_index =",
+#'         ivector[index],
+#'         " and STATE_LABEL ='",
+#'         svector[index],
+#'         "'", sep = "")
 #'
-#'     sql = paste("DROP TABLE IF EXISTS ", tempTableLabels[1], ";", sep = "")
-#'     DatabaseConnector::executeSql(connection,
-#'                                   sql = sql)
 #'
-#'     ############################################################################
-#'     #
-#'     # Creating the first temp table which will gather all patients
-#'     # fulfilling the first state criteria
-#'     #
-#'     ############################################################################
+#'         if (index != length(ivector)) {
+#'           sql = paste(sql, "INTERSECT ")
+#'         }
+#'         if (index > 1 && svector[index] == svector[index-1]){
+#'           checker = 1
+#'         }
+#'
+#'     }
 #'
 #'     sql = paste(
-#'       "CREATE TEMP TABLE ",
-#'       tempTableLabels[1],
-#'       " AS
-#'                 SELECT subject_id, state, MIN(s_index) as s_index FROM (
-#'                   SELECT
-#'                   subject_id, state,
-#'                   ROW_NUMBER() OVER(PARTITION BY subject_id ORDER BY subject_id, state_start_date) as s_index
-#'                   FROM @schema.patient_trajectories) a WHERE STATE_LABEL = '",
-#'       svector[1],
-#'       "' GROUP BY subject_id, STATE_LABEL;",
-#'       sep = ""
+#'       sql,
+#'       ') as "SUBJECT_ID";'
 #'     )
 #'
-#'     sql = loadRenderTranslateSql(dbms = dbms,
-#'                                  sql = sql,
-#'                                  schema = schema)
+#'     table = if (checker == 0) "exact_patient_trajectories" else "patient_trajectories"
 #'
-#'     DatabaseConnector::executeSql(connection,
-#'                                   sql = sql)
-#'
-#'
-#'     for (index in 2:length(svector)) {
-#'       ############################################################################
-#'       #
-#'       # Let's delete the temp table if it already exists
-#'       #
-#'       ############################################################################
-#'
-#'       sql = paste("DROP TABLE IF EXISTS ", tempTableLabels[index], ";", sep = "")
-#'       DatabaseConnector::executeSql(connection,
-#'                                     sql = sql)
-#'
-#'       ############################################################################
-#'       #
-#'       # Creating the n'th temp table which will gather all patients
-#'       # fulfilling the n'th state criteria
-#'       #
-#'       ############################################################################
-#'
-#'       sql = paste(
-#'         "CREATE TEMP TABLE ",
-#'         tempTableLabels[index],
-#'         " AS
-#' SELECT forth.subject_id as subject_id, forth.STATE_LABEL as STATE_LABEL, MIN(forth.s_index) as s_index from (
-#' SELECT subject_id, STATE_LABEL, s_index FROM (
-#'                                                            SELECT
-#'                                                                subject_id, STATE_LABEL,
-#'                                                                ROW_NUMBER() OVER(PARTITION BY subject_id ORDER BY subject_id, state_start_date) as s_index
-#'                                                            FROM @schema.patient_trajectories) a WHERE STATE_LABEL = '",
-#'         svector[index],
-#'         "') forth
-#' INNER JOIN ",
-#'         tempTableLabels[index - 1],
-#'         " fro ON fro.subject_id = forth.subject_id WHERE fro.s_index < forth.s_index GROUP BY forth.subject_id, forth.STATE_LABEL;",
-#'         sep = ""
-#'       )
-#'
-#'       sql = loadRenderTranslateSql(dbms = dbms,
-#'                                    sql = sql,
-#'                                    schema = schema)
-#'       DatabaseConnector::executeSql(connection,
-#'                                     sql = sql)
-#'     }
-#'
+#'     sql = loadRenderTranslateSql(
+#'       dbms = dbms,
+#'       sql = sql,
+#'       schema = schema,
+#'       table = table
+#'     )
 #'
 #'     eligiblePatients <- DatabaseConnector::querySql(connection,
-#'                                                     sql = paste("SELECT subject_id FROM ", tempTableLabels[length(tempTableLabels)], ";"))
+#'                                                     sql = sql)
 #'
 #'     return(eligiblePatients)
 #'   }
 #' }
-#'
-#'
-## DEPRECATED!
-#' #' Query all trajectories defined in the settings
-#' #'
-#' #' @param connection Connection to the database (DatabaseConnector)
-#' #' @param dbms The database management system
-#' #' @param schema Schema in the database where the tables are located
-#' #' @param settings The settings of generating trajectories
-#' #' @export
-#' outputAll = function(connection, dbms, schema, settings) {
-#'   returnList = list()
-#'   outIndex = 0
-#'   for (traj in 1:length(settings)) {
-#'     outIndex = outIndex + 1
-#'     if(is.null(settings[[traj]])) {
-#'       outIndex = outIndex - 1
-#'       next
-#'     }
-#'     if (settings[[traj]]$TYPE[1] == 0) {
-#'       # 0 means loose trajectory
-#'       returnList[[outIndex]] = looseTrajectories(
-#'         connection = connection,
-#'         dbms = dbms,
-#'         schema = schema,
-#'         svector = settings[[traj]]$STATE_LABEL
-#'       )
-#'     }
-#'     if (settings[[traj]]$TYPE[1] == 1) {
-#'       # 1 means exact trajectory
-#'       returnList[[outIndex]] = exactTrajectories(
-#'         connection = connection,
-#'         dbms = dbms,
-#'         schema = schema,
-#'         ivector = settings[[traj]]$INDEX,
-#'         svector = settings[[traj]]$STATE_LABEL
-#'       )
-#'     }
-#'   }
-#'   ######################
-#'   # Create set with eligible patients
-#'   eligiblePatients <- unique(unlist(returnList))
-#'
-#'   ######################
-#'   # Query the data
-#'
-#'   sql2 = loadRenderTranslateSql(
-#'     dbms = dbms,
-#'     sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",
-#'     schema = schema,
-#'     eligiblePatients = eligiblePatients
-#'   )
-#'   returnData <- DatabaseConnector::querySql(connection,
-#'                                             sql = sql2)
-#'
-#'   return(returnData)
-#' }
-
-
 
 #' Query all trajectories defined in the matching table as matches
 #'
@@ -367,6 +184,49 @@ removeBeforeDataset <- function(dataset, selectedState) {
       dplyr::filter(returnData, STATE_START_DATE.y < STATE_START_DATE.x | STATE_LABEL == selectedState),
       -STATE_START_DATE.y
     )
+
+  colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE")
+
+  return(returnData)
+}
+
+#' Query all data about edges and mean elapsed time
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @export
+getEdgesDataset <- function(connection, dbms,schema) {
+  sql <- "SELECT * FROM @schema.@table;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    table = 'patient_trajectories_edges'
+  )
+  returnData <- DatabaseConnector::querySql(connection,
+                                            sql = sql)
+  return(returnData)
+  }
+
+
+#' Remove all instances for patient which occur before selected state occurrence
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @param selectedState Selected state
+#' @export
+removeBeforeDatasetDB <- function(connection, dbms,schema, selectedState) {
+  sql <- "SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    table = 'patient_trajectories',
+    selectedState = selectedState
+  )
+  returnData <- DatabaseConnector::querySql(connection = connection, sql)
 
   colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE")
 

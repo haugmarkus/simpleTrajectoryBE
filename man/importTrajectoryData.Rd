@@ -2,18 +2,22 @@
 % Please edit documentation in R/trajectoryFunctions.R
 \name{importTrajectoryData}
 \alias{importTrajectoryData}
-\title{#' Query patients from the database according to the loose trajectories specified in GUI
+\title{#' Query patients from the database according to the exact trajectories specified in GUI
 #'
 #' @param connection Connection to the database (DatabaseConnector)
 #' @param dbms The database management system
 #' @param schema Schema in the database where the tables are located
 #' @param svector The names of the states which form the observed trajectory
-#' @export
-looseTrajectories <- function(connection, dbms, schema, svector) {
-if (length(svector) < 1) {
-return(message("Vector length smaller than 1!"))
+#' @param ivector The moments in time when the state occurs
+#' @internal
+exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
+if (length(ivector) != length(svector)) {
+return(message("Vector length not equal!"))
 }
-if (length(svector) == 1) {}
+else if (!all(sort(ivector) == 1:length(ivector))){
+return(c())
+}
+else {}
 \usage{
 importTrajectoryData(connection, dbms, schema, trajectories)
 }
@@ -27,54 +31,26 @@ importTrajectoryData(connection, dbms, schema, trajectories)
 \item{trajectories}{The matches in the matching table}
 }
 \description{
-\preformatted{  sql = loadRenderTranslateSql(
-    dbms = dbms,
-    sql = paste("SELECT subject_id FROM @schema.patient_trajectories WHERE STATE_LABEL = '",svector[1], "';", sep = ""),
-    schema = schema
-  )
-  eligiblePatients <- DatabaseConnector::querySql(connection,
-                                                  sql = sql)
+\if{html}{\out{<div class="sourceCode">}}\preformatted{sql = "select * from ("
+# Check for two same states in a row
+checker = 0
+for (index in 1:length(ivector)) \{
+  sql = paste(
+    sql,
+    "select distinct SUBJECT_ID
+           from (SELECT SUBJECT_ID,
+                        STATE_LABEL,
+                        STATE_START_DATE,
+                        ROW_NUMBER()
+                        OVER (PARTITION BY SUBJECT_ID ORDER BY SUBJECT_ID, STATE_START_DATE) as s_index
+                 FROM @schema.@table) i
+           where s_index =",
+    ivector[index],
+    " and STATE_LABEL ='",
+    svector[index],
+    "'", sep = "")
+}\if{html}{\out{</div>}}
 }
-}
-\section{sql2 = loadRenderTranslateSql(}{
-
-}
-
-\section{dbms = dbms,}{
-
-}
-
-\section{sql = "SELECT * FROM @schema.patient_trajectories WHERE SUBJECT_ID IN (@eligiblePatients);",}{
-
-}
-
-\section{schema = schema,}{
-
-}
-
-\section{eligiblePatients = eligiblePatients$SUBJECT_ID}{
+\details{
 
 }
-
-\section{)}{
-
-}
-
-\section{returnData <- DatabaseConnector::querySql(connection,}{
-
-}
-
-\section{sql = sql2)}{
-
-}
-
-\section{Create set with eligible patients}{
-eligiblePatients <- unique(unlist(returnList))
-
-######################
-}
-
-\section{Query the data}{
-
-}
-
