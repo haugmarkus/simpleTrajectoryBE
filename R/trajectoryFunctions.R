@@ -228,7 +228,7 @@ removeBeforeDatasetDB <- function(connection, dbms,schema, selectedState) {
   )
   returnData <- DatabaseConnector::querySql(connection = connection, sql)
 
-  colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE")
+  colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE", "AGE", "GENDER", "GROUP_LABEL")
 
   return(returnData)
 }
