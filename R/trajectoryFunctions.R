@@ -218,7 +218,7 @@ getEdgesDataset <- function(connection, dbms,schema) {
 #' @param selectedState Selected state
 #' @export
 removeBeforeDatasetDB <- function(connection, dbms,schema, selectedState) {
-  sql <- "SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date;"
+  sql <- "SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date;"
   sql <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql,
