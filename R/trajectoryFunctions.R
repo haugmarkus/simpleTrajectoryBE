@@ -206,6 +206,7 @@ getEdgesDataset <- function(connection, dbms,schema) {
   )
   returnData <- DatabaseConnector::querySql(connection,
                                             sql = sql)
+  colnames(returnData) <- c("FROM", "TO", "AVG_TIME_BETWEEN", "COUNT")
   return(returnData)
   }
 

@@ -15,7 +15,7 @@ trajSettings = loadUITrajectories(pathToFile)
 # Create connection to database
 #
 ################################################################################
-dbExists <- TRUE
+dbExists <- FALSE
 
 connection <- NULL
 
@@ -55,7 +55,7 @@ if(dbExists) {
 data = readr::read_csv("TestSchemaTrajectories.csv")
 #data = readr::read_csv("CovidTrajectoriesContinuous.csv")
 data = dplyr::select(data, SUBJECT_ID, STATE, STATE_START_DATE, STATE_END_DATE)
-data = dplyr::filter(data, (STATE %in% c("START", "EXIT")))
+#data = dplyr::filter(data, (STATE %in% c("START", "EXIT")))
 createTrajectoriesTable(conn = connection,dbms = dbms ,schema = schema, data = data)
 
 head(getEdgesDataset(connection, dbms,schema))
