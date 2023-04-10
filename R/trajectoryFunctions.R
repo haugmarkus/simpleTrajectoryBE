@@ -56,7 +56,6 @@ importTrajectoryData = function(connection, dbms, schema, trajectories) {
 
   # Drop temp table
   dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
-  DatabaseConnector::executeSql(connection = connection, sql_drop_rendered)
 ################################################################################
 # Querying the data
 ################################################################################
