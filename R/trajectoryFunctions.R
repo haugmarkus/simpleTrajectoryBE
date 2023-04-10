@@ -79,15 +79,19 @@ importTrajectoryData = function(connection, dbms, schema, trajectories) {
   DatabaseConnector::executeSql(connection,
                                   sql = sql)
 
-  sql <- "SELECT * FROM @schema.@table;"
-  sql <- loadRenderTranslateSql(
-    dbms = dbms,
-    sql = sql,
-    schema = schema,
-    table = 'patient_trajectories_temp'
-  )
-  returnData <- DatabaseConnector::querySql(connection,
-                                            sql = sql)
+  returnData <- importTempData(connection, dbms, schema)
+  return(returnData)
+}
+
+#' Query all patients' data satifying the criteria
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @param trajectories The matches in the matching table
+#' @export
+importTempData = function(connection, dbms, schema) {
+  returnData <- selectTable(connection, dbms, schema, table = 'patient_trajectories_temp')
   colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE", "AGE", "GENDER", "GROUP_LABEL")
   return(returnData)
 }
@@ -170,15 +174,7 @@ removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState) {
 #' @param schema Schema in the database where the tables are located
 #' @export
 getEdgesDataset <- function(connection, dbms,schema) {
-  sql <- "SELECT * FROM @schema.@table;"
-  sql <- loadRenderTranslateSql(
-    dbms = dbms,
-    sql = sql,
-    schema = schema,
-    table = 'patient_trajectories_edges'
-  )
-  returnData <- DatabaseConnector::querySql(connection,
-                                            sql = sql)
+  returnData <- selectTable(connection, dbms, schema, table = 'patient_trajectories_edges')
   colnames(returnData) <- c("FROM", "TO", "AVG_TIME_BETWEEN", "COUNT")
   return(returnData)
   }

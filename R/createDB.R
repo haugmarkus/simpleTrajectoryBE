@@ -160,3 +160,22 @@ sql_drop_rendered <- loadRenderTranslateSql(
 )
 DatabaseConnector::executeSql(connection = connection, sql_drop_rendered)
 }
+################################################################################
+#
+# Select * from table
+#
+################################################################################
+#' @keywords internal
+selectTable <- function(connection, dbms, schema, table) {
+  sql <- "SELECT * FROM @schema.@table;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    table = table
+  )
+  returnData <- DatabaseConnector::querySql(connection,
+                                            sql = sql)
+
+  }
+
