@@ -32,7 +32,9 @@ createTrajectoriesTable = function(conn, dbms, data, schema){
   #
   ##############################################################################
 
-  names(data)[names(data) == 'STATE'] <- 'STATE_LABEL'
+  # Change labelnames if needed
+  lookup <- c(STATE_LABEL = "STATE", GROUP_LABEL = "GROUP")
+  data = dplyr::rename(data, dplyr::any_of(lookup))
 
 # We create two tables:
 # 1) patient_trajectories - the table is the same as in the input file
@@ -47,29 +49,37 @@ createTrajectoriesTable = function(conn, dbms, data, schema){
   ##############################################################################
   sql_drop <- "DROP TABLE IF EXISTS @schema.@table;"
 
-  sql_drop1 <- loadRenderTranslateSql(
+  sql_drop_rendered <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql_drop,
     schema = schema,
     table = 'patient_trajectories'
   )
-  DatabaseConnector::executeSql(connection = conn, sql_drop1)
+  DatabaseConnector::executeSql(connection = conn, sql_drop_rendered)
 
-  sql_drop2 <- loadRenderTranslateSql(
+  sql_drop_rendered <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql_drop,
+    schema = schema,
+    table = 'patient_trajectories_temp'
+  )
+  DatabaseConnector::executeSql(connection = conn, sql_drop_rendered)
+
+  sql_drop_rendered <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql_drop,
     schema = schema,
     table = 'patient_trajectories_combined'
   )
-  DatabaseConnector::executeSql(connection = conn, sql_drop2)
+  DatabaseConnector::executeSql(connection = conn, sql_drop_rendered)
 
-  sql_drop3 <- loadRenderTranslateSql(
+  sql_drop_rendered <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql_drop,
     schema = schema,
     table = 'patient_trajectories_edges'
   )
-  DatabaseConnector::executeSql(connection = conn, sql_drop3)
+  DatabaseConnector::executeSql(connection = conn, sql_drop_rendered)
 
   ##############################################################################
   #
@@ -82,13 +92,10 @@ createTrajectoriesTable = function(conn, dbms, data, schema){
                                  databaseSchema = schema,
                                  data = data)
 
-  # data$TO_STATE = c(data$STATE_LABEL[2:nrow(data)], "$$not_initialized$$")
-  # data = dplyr::select(subset(data, STATE_LABEL != TO_STATE), -TO_STATE)
-
-  # DatabaseConnector::insertTable(connection = conn,
-  #                                tableName = "exact_patient_trajectories",
-  #                                databaseSchema = schema,
-  #                                data = data)
+  DatabaseConnector::insertTable(connection = conn,
+                                 tableName = "patient_trajectories_temp",
+                                 databaseSchema = schema,
+                                 data = data)
   ##############################################################################
   #
   # Create trajectory statistics tables
