@@ -130,8 +130,12 @@ removeBeforeDataset <- function(dataset, selectedState) {
 #' @param schema Schema in the database where the tables are located
 #' @param selectedState Selected state
 #' @export
-removeBeforeDatasetDB <- function(connection, dbms,schema, selectedState) {
-  sql <- "SELECT * INTO @schema.patient_trajectories_temp_temp FROM(SELECT * INTO @schema.@table FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date));"
+removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState) {
+  # Drop table
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_temp')
+
+  # If there is no such state it will return zero rows
+  sql <- "SELECT * INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date);"
   sql <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql,
@@ -144,7 +148,7 @@ removeBeforeDatasetDB <- function(connection, dbms,schema, selectedState) {
   # Drop table
   dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
 
-  sql <- "ALTER TABLE @schema.@tableB RENAME TO @schema.@tableA;"
+  sql <- "ALTER TABLE @schema.@tableB RENAME TO @tableA;"
   sql <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql,
