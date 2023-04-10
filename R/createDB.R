@@ -36,6 +36,19 @@ createTrajectoriesTable = function(conn, dbms, data, schema){
   lookup <- c(STATE_LABEL = "STATE", GROUP_LABEL = "GROUP")
   data = dplyr::rename(data, dplyr::any_of(lookup))
 
+  # Add missing columns if needed
+  # Add column AGE if needed
+  if (!("AGE" %in% colnames(data))) {
+    data$AGE = 0
+  }
+  # Add column GENDER if needed
+  if (!("GENDER" %in% colnames(data))) {
+    data$GENDER = "OTHER"
+  }
+  # Add column GROUP_LABEL if needed
+  if (!("GROUP_LABEL" %in% colnames(data))) {
+    data$GROUP_LABEL = "NA"
+  }
 # We create two tables:
 # 1) patient_trajectories - the table is the same as in the input file
 # 2) exact_patient_trajectories - the table has excluded rows where transitions are made to the same state

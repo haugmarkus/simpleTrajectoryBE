@@ -116,46 +116,54 @@ loadRenderTranslateSql <- function(sql,
 #' @param trajectories The matches in the matching table
 #' @export
 importTrajectoryData = function(connection, dbms, schema, trajectories) {
-  # returnList = list()
-  # if (nrow(trajectories) > 0) {
-  #   for (i in 1:nrow(trajectories)) {
-  #     trajectoryAtomic <- stringr::str_split(trajectories[i,]$TRAJECTORY, pattern = "->>")[[1]]
-  #     returnList[[i]] = exactTrajectories(
-  #       connection = connection,
-  #       dbms = dbms,
-  #       schema = schema,
-  #       ivector = 1:length(trajectoryAtomic),
-  #       svector = trajectoryAtomic
-  #     )
-  #   }
-  # }
 ################################################################################
 # Create a set with eligible patients
 ################################################################################
   # eligiblePatients <- unique(unlist(returnList))
 
+  # Drop temp table
+  sql_drop <- "DROP TABLE IF EXISTS @schema.@table;"
+
+  sql_drop_rendered <- loadRenderTranslateSql(
+  dbms = dbms,
+  sql = sql_drop,
+  schema = schema,
+  table = 'patient_trajectories_temp'
+  )
+  DatabaseConnector::executeSql(connection = connection, sql_drop_rendered)
 ################################################################################
 # Querying the data
 ################################################################################
+
   if(dbms != 'sqlite') {
   sql = loadRenderTranslateSql(
     dbms = dbms,
-    sql = "SELECT * FROM @schema.patient_trajectories_tmp WHERE subject_id = ANY(SELECT unnest(subject_ids) from @schema.patient_trajectories_combined where trajectory IN (@trajectories));",
+    sql = "SELECT * INTO @schema.patient_trajectories_temp FROM (SELECT * FROM @schema.patient_trajectories WHERE subject_id = ANY(SELECT unnest(subject_ids) from @schema.patient_trajectories_combined where trajectory IN (@trajectories)));",
     schema = schema,
     trajectories = paste0("'", paste(trajectories$TRAJECTORY, collapse = "','"), "'")
   )
   } else {
     sql = loadRenderTranslateSql(
       dbms = dbms,
-      sql = "SELECT * FROM @schema.patient_trajectories_tmp WHERE subject_id IN (SELECT CAST(subject_id AS INTEGER) FROM (SELECT DISTINCT subject_ids FROM @schema.patient_trajectories_combined WHERE trajectory IN (@trajectories)  ) AS x WHERE ',' || x.subject_ids || ',' LIKE '%,' || CAST(patient_trajectories_tmp.subject_id AS TEXT) || ',%');",
+      sql = "SELECT * INTO @schema.patient_trajectories_temp FROM(SELECT * FROM @schema.patient_trajectories WHERE subject_id IN (SELECT CAST(subject_id AS INTEGER) FROM (SELECT DISTINCT subject_ids FROM @schema.patient_trajectories_combined WHERE trajectory IN (@trajectories)  ) AS x WHERE ',' || x.subject_ids || ',' LIKE '%,' || CAST(patient_trajectories.subject_id AS TEXT) || ',%'));",
       schema = schema,
       trajectories = paste0("'", paste(trajectories$TRAJECTORY, collapse = "','"), "'")
     )
   }
 
+  DatabaseConnector::executeSql(connection,
+                                  sql = sql)
+
+  sql <- "SELECT * FROM @schema.@table;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    table = 'patient_trajectories_temp'
+  )
   returnData <- DatabaseConnector::querySql(connection,
                                             sql = sql)
-
+  colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE", "AGE", "GENDER", "GROUP_LABEL")
   return(returnData)
 }
 
