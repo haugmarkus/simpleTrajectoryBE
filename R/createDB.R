@@ -60,39 +60,10 @@ createTrajectoriesTable = function(conn, dbms, data, schema){
   # DROP tables
   #
   ##############################################################################
-  sql_drop <- "DROP TABLE IF EXISTS @schema.@table;"
-
-  sql_drop_rendered <- loadRenderTranslateSql(
-    dbms = dbms,
-    sql = sql_drop,
-    schema = schema,
-    table = 'patient_trajectories'
-  )
-  DatabaseConnector::executeSql(connection = conn, sql_drop_rendered)
-
-  sql_drop_rendered <- loadRenderTranslateSql(
-    dbms = dbms,
-    sql = sql_drop,
-    schema = schema,
-    table = 'patient_trajectories_temp'
-  )
-  DatabaseConnector::executeSql(connection = conn, sql_drop_rendered)
-
-  sql_drop_rendered <- loadRenderTranslateSql(
-    dbms = dbms,
-    sql = sql_drop,
-    schema = schema,
-    table = 'patient_trajectories_combined'
-  )
-  DatabaseConnector::executeSql(connection = conn, sql_drop_rendered)
-
-  sql_drop_rendered <- loadRenderTranslateSql(
-    dbms = dbms,
-    sql = sql_drop,
-    schema = schema,
-    table = 'patient_trajectories_edges'
-  )
-  DatabaseConnector::executeSql(connection = conn, sql_drop_rendered)
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories')
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_combined')
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_edges')
 
   ##############################################################################
   #
@@ -173,5 +144,19 @@ loadUITrajectories = function(pathToFile = NULL,
 }
 
 
-
-
+################################################################################
+#
+# Drop a table
+#
+################################################################################
+#' @keywords internal
+dropTable <- function(connection, dbms, schema, table) {
+sql_drop <- "IF OBJECT_ID('table', 'U') IS NOT NULL DROP TABLE @schema.@table CASCADE;"
+sql_drop_rendered <- loadRenderTranslateSql(
+  dbms = dbms,
+  sql = sql_drop,
+  schema = schema,
+  table = table
+)
+DatabaseConnector::executeSql(connection = connection, sql_drop_rendered)
+}

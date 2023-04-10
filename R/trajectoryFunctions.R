@@ -41,73 +41,6 @@ loadRenderTranslateSql <- function(sql,
   return(renderedSql)
 }
 
-#' #' Query patients from the database according to the exact trajectories specified in GUI
-#' #'
-#' #' @param connection Connection to the database (DatabaseConnector)
-#' #' @param dbms The database management system
-#' #' @param schema Schema in the database where the tables are located
-#' #' @param svector The names of the states which form the observed trajectory
-#' #' @param ivector The moments in time when the state occurs
-#' #' @internal
-#' exactTrajectories <- function(connection, dbms, schema, svector, ivector) {
-#'   if (length(ivector) != length(svector)) {
-#'     return(message("Vector length not equal!"))
-#'   }
-#'   else if (!all(sort(ivector) == 1:length(ivector))){
-#'     return(c())
-#'   }
-#'   else {
-#'
-#'     sql = "select * from ("
-#'     # Check for two same states in a row
-#'     checker = 0
-#'     for (index in 1:length(ivector)) {
-#'       sql = paste(
-#'         sql,
-#'         "select distinct SUBJECT_ID
-#'                from (SELECT SUBJECT_ID,
-#'                             STATE_LABEL,
-#'                             STATE_START_DATE,
-#'                             ROW_NUMBER()
-#'                             OVER (PARTITION BY SUBJECT_ID ORDER BY SUBJECT_ID, STATE_START_DATE) as s_index
-#'                      FROM @schema.@table) i
-#'                where s_index =",
-#'         ivector[index],
-#'         " and STATE_LABEL ='",
-#'         svector[index],
-#'         "'", sep = "")
-#'
-#'
-#'         if (index != length(ivector)) {
-#'           sql = paste(sql, "INTERSECT ")
-#'         }
-#'         if (index > 1 && svector[index] == svector[index-1]){
-#'           checker = 1
-#'         }
-#'
-#'     }
-#'
-#'     sql = paste(
-#'       sql,
-#'       ') as "SUBJECT_ID";'
-#'     )
-#'
-#'     table = if (checker == 0) "exact_patient_trajectories" else "patient_trajectories"
-#'
-#'     sql = loadRenderTranslateSql(
-#'       dbms = dbms,
-#'       sql = sql,
-#'       schema = schema,
-#'       table = table
-#'     )
-#'
-#'     eligiblePatients <- DatabaseConnector::querySql(connection,
-#'                                                     sql = sql)
-#'
-#'     return(eligiblePatients)
-#'   }
-#' }
-
 #' Query all trajectories defined in the matching table as matches
 #'
 #' @param connection Connection to the database (DatabaseConnector)
@@ -206,7 +139,7 @@ removeBeforeDataset <- function(dataset, selectedState) {
 #' @param selectedState Selected state
 #' @export
 removeBeforeDatasetDB <- function(connection, dbms,schema, selectedState) {
-  sql <- "SELECT * INTO @schema.@table FROM(SELECT * INTO @schema.@table FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date));"
+  sql <- "SELECT * INTO @schema.patient_trajectories_temp_temp FROM(SELECT * INTO @schema.@table FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date));"
   sql <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql,
@@ -214,7 +147,19 @@ removeBeforeDatasetDB <- function(connection, dbms,schema, selectedState) {
     table = 'patient_trajectories_temp',
     selectedState = selectedState
   )
-  returnData <- DatabaseConnector::executeSql(connection = connection, sql)
+  DatabaseConnector::executeSql(connection = connection, sql)
+
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
+
+  sql <- "ALTER TABLE @schema.@tableB RENAME TO @schema.@tableA;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    tableA = 'patient_trajectories_temp',
+    tableB = 'patient_trajectories_temp_temp'
+  )
+  DatabaseConnector::executeSql(connection = connection, sql)
 
   # colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE", "AGE", "GENDER", "GROUP_LABEL")
   #
