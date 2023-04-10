@@ -19,12 +19,12 @@ createConnectionSQLite = function(){
 #
 ################################################################################
 
-#' @param conn Connection to the database (DatabaseConnector)
+#' @param connection Connection to the database (DatabaseConnector)
 #' @param dbms The database management system
 #' @param data Imported data
 #' @param schema Name of the used schema
 #' @export
-createTrajectoriesTable = function(conn, dbms, data, schema){
+createTrajectoriesTable = function(connection, dbms, data, schema){
   ##############################################################################
   #
   # Lets switch the name of "STATE" in colnames to "STATE_LABEL" to
@@ -71,12 +71,12 @@ createTrajectoriesTable = function(conn, dbms, data, schema){
   #
   ##############################################################################
 
-  DatabaseConnector::insertTable(connection = conn,
+  DatabaseConnector::insertTable(connection = connection,
                                  tableName = "patient_trajectories",
                                  databaseSchema = schema,
                                  data = data)
 
-  DatabaseConnector::insertTable(connection = conn,
+  DatabaseConnector::insertTable(connection = connection,
                                  tableName = "patient_trajectories_temp",
                                  databaseSchema = schema,
                                  data = data)
@@ -94,7 +94,7 @@ createTrajectoriesTable = function(conn, dbms, data, schema){
     schema = schema,
     table = 'patient_trajectories_combined'
   )
-  DatabaseConnector::executeSql(connection = conn, sql)
+  DatabaseConnector::executeSql(connection = connection, sql)
 
   ##############################################################################
   #
@@ -114,7 +114,7 @@ createTrajectoriesTable = function(conn, dbms, data, schema){
   #   table = 'patient_trajectories_edges'
   # )
 
-  DatabaseConnector::executeSql(connection = conn, sql)
+  DatabaseConnector::executeSql(connection = connection, sql)
 
 }
 ################################################################################
@@ -151,7 +151,7 @@ loadUITrajectories = function(pathToFile = NULL,
 ################################################################################
 #' @keywords internal
 dropTable <- function(connection, dbms, schema, table) {
-sql_drop <- "IF OBJECT_ID('table', 'U') IS NOT NULL DROP TABLE @schema.@table CASCADE;"
+sql_drop <- "IF OBJECT_ID('table', 'U') IS NOT NULL DROP TABLE @schema.@table;"
 sql_drop_rendered <- loadRenderTranslateSql(
   dbms = dbms,
   sql = sql_drop,

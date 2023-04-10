@@ -55,14 +55,7 @@ importTrajectoryData = function(connection, dbms, schema, trajectories) {
   # eligiblePatients <- unique(unlist(returnList))
 
   # Drop temp table
-  sql_drop <- "DROP TABLE IF EXISTS @schema.@table;"
-
-  sql_drop_rendered <- loadRenderTranslateSql(
-  dbms = dbms,
-  sql = sql_drop,
-  schema = schema,
-  table = 'patient_trajectories_temp'
-  )
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
   DatabaseConnector::executeSql(connection = connection, sql_drop_rendered)
 ################################################################################
 # Querying the data
@@ -149,6 +142,7 @@ removeBeforeDatasetDB <- function(connection, dbms,schema, selectedState) {
   )
   DatabaseConnector::executeSql(connection = connection, sql)
 
+  # Drop table
   dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
 
   sql <- "ALTER TABLE @schema.@tableB RENAME TO @schema.@tableA;"
