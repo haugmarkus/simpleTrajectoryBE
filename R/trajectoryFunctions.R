@@ -63,14 +63,14 @@ importTrajectoryData = function(connection, dbms, schema, trajectories) {
   if(dbms != 'sqlite') {
   sql = loadRenderTranslateSql(
     dbms = dbms,
-    sql = "SELECT * INTO @schema.patient_trajectories_temp FROM (SELECT * FROM @schema.patient_trajectories WHERE subject_id = ANY(SELECT unnest(subject_ids) from @schema.patient_trajectories_combined where trajectory IN (@trajectories)));",
+    sql = "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp FROM (SELECT * FROM @schema.patient_trajectories WHERE subject_id = ANY(SELECT unnest(subject_ids) from @schema.patient_trajectories_combined where trajectory IN (@trajectories)));",
     schema = schema,
     trajectories = paste0("'", paste(trajectories$TRAJECTORY, collapse = "','"), "'")
   )
   } else {
     sql = loadRenderTranslateSql(
       dbms = dbms,
-      sql = "SELECT * INTO @schema.patient_trajectories_temp FROM(SELECT * FROM @schema.patient_trajectories WHERE subject_id IN (SELECT CAST(subject_id AS INTEGER) FROM (SELECT DISTINCT subject_ids FROM @schema.patient_trajectories_combined WHERE trajectory IN (@trajectories)  ) AS x WHERE ',' || x.subject_ids || ',' LIKE '%,' || CAST(patient_trajectories.subject_id AS TEXT) || ',%'));",
+      sql = "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp FROM(SELECT * FROM @schema.patient_trajectories WHERE subject_id IN (SELECT CAST(subject_id AS INTEGER) FROM (SELECT DISTINCT subject_ids FROM @schema.patient_trajectories_combined WHERE trajectory IN (@trajectories)  ) AS x WHERE ',' || x.subject_ids || ',' LIKE '%,' || CAST(patient_trajectories.subject_id AS TEXT) || ',%'));",
       schema = schema,
       trajectories = paste0("'", paste(trajectories$TRAJECTORY, collapse = "','"), "'")
     )
@@ -139,7 +139,7 @@ removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState) {
   dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_temp')
 
   # If there is no such state it will return zero rows
-  sql <- "SELECT * INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date);"
+  sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date);"
   sql <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql,

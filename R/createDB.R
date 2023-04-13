@@ -49,10 +49,10 @@ createTrajectoriesTable = function(connection, dbms, data, schema){
   if (!("GROUP_LABEL" %in% colnames(data))) {
     data$GROUP_LABEL = "NA"
   }
-# We create two tables:
-# 1) patient_trajectories - the table is the same as in the input file
-# 2) exact_patient_trajectories - the table has excluded rows where transitions are made to the same state
-# This is done to optimize the queries
+
+    # Select only columns used in the package
+
+  data = dplyr::select(data, SUBJECT_ID, STATE_LABEL, STATE_START_DATE, STATE_END_DATE, AGE, GENDER, GROUP_LABEL)
 
 
   ##############################################################################
