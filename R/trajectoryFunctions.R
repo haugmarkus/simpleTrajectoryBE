@@ -47,6 +47,7 @@ loadRenderTranslateSql <- function(sql,
 #' @param dbms The database management system
 #' @param schema Schema in the database where the tables are located
 #' @param trajectories The matches in the matching table
+#' @param settings The settings of generating trajectories
 #' @export
 importTrajectoryData = function(connection, dbms, schema, trajectories) {
 ################################################################################
@@ -79,6 +80,8 @@ importTrajectoryData = function(connection, dbms, schema, trajectories) {
   DatabaseConnector::executeSql(connection,
                                   sql = sql)
 
+  filterBySettings(connection = connection, dbms = dbms, schema = schema, settings = trajSettings)
+
   returnData <- importTempData(connection, dbms, schema)
   return(returnData)
 }
@@ -97,35 +100,35 @@ importTempData = function(connection, dbms, schema) {
 }
 
 
-#' Remove all instances for patient which occur before selected state occurrence
-#' @param dataset Patient trajectory data
-#' @param selectedState Selected state
-#' @export
-removeBeforeDataset <- function(dataset, selectedState) {
-  if (!selectedState %in% unique(dataset$STATE_LABEL)) {
-    return(dataset)
-  }
-
-  # Remove conditions before Discharge
-  dataset$STATE_START_DATE <- as.Date(dataset$STATE_START_DATE)
-  dataIndex <-
-    dplyr::select(data.frame(dplyr::slice(
-      dplyr::filter(dplyr::group_by(dataset, SUBJECT_ID), STATE_LABEL == selectedState),
-      which.min(STATE_START_DATE)
-    )), SUBJECT_ID, STATE_START_DATE)
-  returnData <- dplyr::left_join(dataset, dataIndex, by = "SUBJECT_ID")
-
-  # Removing states occurring before
-  returnData <-
-    dplyr::select(
-      dplyr::filter(returnData, STATE_START_DATE.y < STATE_START_DATE.x | STATE_LABEL == selectedState),
-      -STATE_START_DATE.y
-    )
-
-  colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE")
-
-  return(returnData)
-}
+#' #' Remove all instances for patient which occur before selected state occurrence
+#' #' @param dataset Patient trajectory data
+#' #' @param selectedState Selected state
+#' #' @export
+#' removeBeforeDataset <- function(dataset, selectedState) {
+#'   if (!selectedState %in% unique(dataset$STATE_LABEL)) {
+#'     return(dataset)
+#'   }
+#'
+#'   # Remove conditions before Discharge
+#'   dataset$STATE_START_DATE <- as.Date(dataset$STATE_START_DATE)
+#'   dataIndex <-
+#'     dplyr::select(data.frame(dplyr::slice(
+#'       dplyr::filter(dplyr::group_by(dataset, SUBJECT_ID), STATE_LABEL == selectedState),
+#'       which.min(STATE_START_DATE)
+#'     )), SUBJECT_ID, STATE_START_DATE)
+#'   returnData <- dplyr::left_join(dataset, dataIndex, by = "SUBJECT_ID")
+#'
+#'   # Removing states occurring before
+#'   returnData <-
+#'     dplyr::select(
+#'       dplyr::filter(returnData, STATE_START_DATE.y < STATE_START_DATE.x | STATE_LABEL == selectedState),
+#'       -STATE_START_DATE.y
+#'     )
+#'
+#'   colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE")
+#'
+#'   return(returnData)
+#' }
 
 #' Remove all instances for patient which occur before selected state occurrence
 #'
@@ -140,6 +143,46 @@ removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState) {
 
   # If there is no such state it will return zero rows
   sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date);"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    table = 'patient_trajectories_temp',
+    selectedState = selectedState
+  )
+  DatabaseConnector::executeSql(connection = connection, sql)
+
+  # Drop table
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
+
+  sql <- "ALTER TABLE @schema.@tableB RENAME TO @tableA;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    tableA = 'patient_trajectories_temp',
+    tableB = 'patient_trajectories_temp_temp'
+  )
+  DatabaseConnector::executeSql(connection = connection, sql)
+
+  # colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE", "AGE", "GENDER", "GROUP_LABEL")
+  #
+  # return(returnData)
+}
+
+#' Remove all instances for patient which occur after selected state occurrence
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @param selectedState Selected state
+#' @export
+removeAfterDatasetDB <- function(connection, dbms, schema, selectedState) {
+  # Drop table
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_temp')
+
+  # If there is no such state it will return zero rows
+  sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MAX(state_start_date) AS max_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date <= s.max_start_date ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date);"
   sql <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql,
@@ -205,3 +248,31 @@ queryEdgesDatasetGroup <- function(connection, dbms, schema, groupId = NULL) {
   colnames(returnData) <- c("FROM", "TO", "AVG_TIME_BETWEEN", "COUNT")
   return(returnData)
 }
+
+
+#' Remove all instances for patient which occur after selected state occurrence
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @param settings The settings of generating trajectories
+#' @keywords internal
+filterBySettings <-
+  function(connection,
+           dbms,
+           schema,
+           settings) {
+    unlist(lapply(settings, function(table) {
+      # trajStates <- NULL
+      # Exact trajectory case meaning we will cut trajectories starting and ending points
+      if (table$TYPE[1] == 1) {
+        firstState = table$STATE_LABEL[1]
+        lastState = table$STATE_LABEL[nrow(table)]
+        print(firstState)
+        print(lastState)
+        removeBeforeDatasetDB(connection, dbms, schema, selectedState = firstState)
+        removeAfterDatasetDB(connection, dbms, schema, selectedState = lastState)
+
+      }
+    }))
+  }

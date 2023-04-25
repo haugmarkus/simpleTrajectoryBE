@@ -15,7 +15,7 @@ trajSettings = loadUITrajectories(pathToFile)
 # Create connection to database
 #
 ################################################################################
-dbExists <- FALSE
+dbExists <- F
 
 connection <- NULL
 
@@ -28,21 +28,13 @@ if(dbExists) {
   pathToDriver <- './Drivers'
   dbms <- "postgresql" #TODO
   user <- 'mhaug' #TODO
-  pw <- "" #TODO
-  server <- '172.17.64.158/coriva' #TODO
+  password <- "" #TODO
+  server <- '172.17.64.158' #TODO
+  database <- "coriva"
   port <- '5432' #TODO
   schema <- 'ohdsi_temp' #TODO
-  connectionDetails <-
-    DatabaseConnector::createConnectionDetails(
-      dbms = dbms,
-      server = server,
-      user = user,
-      password = pw,
-      port = port,
-      pathToDriver = pathToDriver
-    )
 
-  connection <- DatabaseConnector::connect(connectionDetails)
+  connection <- createConnection(server, database, password, user, dbms, port, pathToDriver)
 } else {
   dbms = "sqlite"
   schema = "main"
@@ -60,6 +52,8 @@ createTrajectoriesTable(conn = connection,dbms = dbms ,schema = schema, data = d
 
 head(getEdgesDataset(connection, dbms,schema))
 
+
+filterBySettings(connection = connection, dbms = dbms, schema = "main", settings = trajSettings)
 removeBeforeDatasetDB(connection = connection, dbms,schema, "State2")
 ################################################################################
 #
@@ -76,7 +70,7 @@ matchTable <- outputTrajectoryStatisticsTables(dataTable = initialTable, setting
 #
 ################################################################################
 # result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
-result = importTrajectoryData(connection = connection, dbms = dbms, schema = schema, trajectories = matchTable$notMatching)
+result = importTrajectoryData(connection = connection, dbms = dbms, schema = schema, trajectories = matchTable$matching)
 nrow(result)
 
 

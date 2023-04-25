@@ -33,8 +33,10 @@ test_that("Quering all trajectories' statistics table with settings", {
   pathToFile = "/inputUI.csv"
   trajSettings = loadUITrajectories((paste(pathToResults,pathToFile, sep ="")))
   dataTable <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
+  print(trajSettings)
+  print(dataTable)
   result <- outputTrajectoryStatisticsTables(dataTable = dataTable, settings = trajSettings)
   DatabaseConnector::disconnect(connection)
-  expect_equal(result$matching[1,]$TOTAL, 1000)
+  expect_equal(result$matching[1,]$TOTAL, 2000)
 })
 #> Test passed 🥇

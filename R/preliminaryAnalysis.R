@@ -45,19 +45,19 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
 
   trajDefined <- unlist(lapply(settings, function(table){
   trajStates <- NULL
-  if (table$TYPE[1] == 1) {
-  trajStates <- c()
-  for (trajectoryPresent in dataTable$TRAJECTORY) {
-  trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]]
-  trajectorySelectedAtomic <- table$STATE_LABEL
-
-  if(identical(trajectorySelectedAtomic,trajectoryPresentAtomic[table$INDEX])) {
-    trajectoryCollapsed <- paste0(trajectoryPresentAtomic[1:max(table$INDEX)], collapse = "->>") #paste0(trajectorySelectedAtomic, collapse = "->>")
-    trajStates <- c(trajStates, trajectoryCollapsed)
-  }
-  }
-  }
-  if (table$TYPE[1] == 0) {
+  # if (table$TYPE[1] == 1) {
+  # trajStates <- c()
+  # for (trajectoryPresent in dataTable$TRAJECTORY) {
+  # trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]]
+  # trajectorySelectedAtomic <- table$STATE_LABEL
+  #
+  # if(identical(trajectorySelectedAtomic,trajectoryPresentAtomic[table$INDEX])) {
+  #   trajectoryCollapsed <- paste0(trajectoryPresentAtomic[1:max(table$INDEX)], collapse = "->>") #paste0(trajectorySelectedAtomic, collapse = "->>")
+  #   trajStates <- c(trajStates, trajectoryCollapsed)
+  # }
+  # }
+  # }
+  # if (table$TYPE[1] == 0) {
     trajStates <- c() # Return vector with all relevant trajectories
     for (trajectoryPresent in dataTable$TRAJECTORY) { # We start from looping over all present trajectories
       trajectoryPresentAtomicOriginal <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]] # Break present trajectory down to states
@@ -82,15 +82,19 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
         else {break}
       }
     }
-  }
+  # }
   return(unique(trajStates))
   }))
   indexes <- 1:nrow(dataTable)
   matchingVec <- as.logical(Reduce("+",lapply(trajDefined, function(x){
-    x == dataTable$TRAJECTORY
+    #x == dataTable$TRAJECTORY
+    grepl(x, dataTable$TRAJECTORY)
   })))
   partiallyMatchingVec <- as.logical(Reduce("+", lapply(trajDefined,function(x){
-    grepl(x, dataTable$TRAJECTORY)
+    #grepl(x, dataTable$TRAJECTORY)
+    split_string <- strsplit(x, "->>")
+    resulting_array <- unlist(split_string)
+    sapply(strsplit(dataTable$TRAJECTORY, "->>"), function(x) any(x %in% resulting_array))
   })))
   if (length(matchingVec)==0) {
     matchingVec <- rep(FALSE, nrow(dataTable))

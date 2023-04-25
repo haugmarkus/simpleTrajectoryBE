@@ -2,7 +2,14 @@
 % Please edit documentation in R/trajectoryFunctions.R
 \name{removeBeforeDatasetDB}
 \alias{removeBeforeDatasetDB}
-\title{Remove all instances for patient which occur before selected state occurrence}
+\title{#' Remove all instances for patient which occur before selected state occurrence
+#' @param dataset Patient trajectory data
+#' @param selectedState Selected state
+#' @export
+removeBeforeDataset <- function(dataset, selectedState) {
+if (!selectedState \%in\% unique(dataset$STATE_LABEL)) {
+return(dataset)
+}}
 \usage{
 removeBeforeDatasetDB(connection, dbms, schema, selectedState)
 }
@@ -16,5 +23,26 @@ removeBeforeDatasetDB(connection, dbms, schema, selectedState)
 \item{selectedState}{Selected state}
 }
 \description{
-Remove all instances for patient which occur before selected state occurrence
+#' Remove all instances for patient which occur before selected state occurrence
+#' @param dataset Patient trajectory data
+#' @param selectedState Selected state
+#' @export
+removeBeforeDataset <- function(dataset, selectedState) {
+if (!selectedState \%in\% unique(dataset$STATE_LABEL)) {
+return(dataset)
 }
+}
+\section{Remove conditions before Discharge}{
+dataset$STATE_START_DATE <- as.Date(dataset$STATE_START_DATE)
+dataIndex <-
+dplyr::select(data.frame(dplyr::slice(
+dplyr::filter(dplyr::group_by(dataset, SUBJECT_ID), STATE_LABEL == selectedState),
+which.min(STATE_START_DATE)
+)), SUBJECT_ID, STATE_START_DATE)
+returnData <- dplyr::left_join(dataset, dataIndex, by = "SUBJECT_ID")
+}
+
+\section{Removing states occurring before}{
+
+}
+

@@ -16,6 +16,6 @@ test_that("Quering all patient data with specified settings", {
   result <- outputTrajectoryStatisticsTables(dataTable = dataTable, settings = trajSettings)
   returnedData <- importTrajectoryData(connection, dbms, schema, result$matching)
   DatabaseConnector::disconnect(connection)
-  expect_equal(nrow(returnedData), 4000)
+  expect_equal(nrow(returnedData), 15001)
 })
 #> Test passed 🥇

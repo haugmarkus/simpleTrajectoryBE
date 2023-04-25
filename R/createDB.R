@@ -13,6 +13,35 @@ createConnectionSQLite = function(){
   return(DatabaseConnector::connect(dbms = "sqlite", server = tempfile()))
 }
 
+
+################################################################################
+#
+# Create database connection for remote database
+#
+################################################################################
+
+#' @param dbms The database management system
+#' @param server IP of the database server
+#' @param database Name of the database
+#' @param user Username of the database user
+#' @param password Password of the database user
+#' @param port Port of the database
+#' @param pathToDriver Path to drivers' repository
+#' @export
+createConnection = function(server = "localhost", database, password, user, dbms, port, pathToDriver){
+  connectionDetails <-
+    DatabaseConnector::createConnectionDetails(
+      dbms = dbms,
+      server = paste(server, database, sep = "/"),
+      user = user,
+      password = password,
+      port = port,
+      pathToDriver = pathToDriver
+    )
+  connection <- DatabaseConnector::connect(connectionDetails)
+ return(connection)
+}
+
 ################################################################################
 #
 # Create table 'patient_trajectories' into the database
@@ -27,8 +56,8 @@ createConnectionSQLite = function(){
 createTrajectoriesTable = function(connection, dbms, data, schema){
   ##############################################################################
   #
-  # Lets switch the name of "STATE" in colnames to "STATE_LABEL" to
-  # avoid possible DBMS problems
+  # Lets switch the name of "STATE" in colnames to "STATE_LABEL" or "GROUP" to
+  # "GROUP_LABEL" for avoiding possible SQL compiling problems
   #
   ##############################################################################
 
@@ -177,5 +206,5 @@ selectTable <- function(connection, dbms, schema, table) {
   returnData <- DatabaseConnector::querySql(connection,
                                             sql = sql)
 
-  }
+ }
 
