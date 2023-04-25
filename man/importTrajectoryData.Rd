@@ -4,7 +4,7 @@
 \alias{importTrajectoryData}
 \title{Query all trajectories defined in the matching table as matches}
 \usage{
-importTrajectoryData(connection, dbms, schema, trajectories)
+importTrajectoryData(connection, dbms, schema, trajectories, settings)
 }
 \arguments{
 \item{connection}{Connection to the database (DatabaseConnector)}

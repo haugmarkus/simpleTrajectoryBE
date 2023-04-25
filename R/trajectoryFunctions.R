@@ -49,7 +49,7 @@ loadRenderTranslateSql <- function(sql,
 #' @param trajectories The matches in the matching table
 #' @param settings The settings of generating trajectories
 #' @export
-importTrajectoryData = function(connection, dbms, schema, trajectories) {
+importTrajectoryData = function(connection, dbms, schema, trajectories, settings) {
 ################################################################################
 # Create a set with eligible patients
 ################################################################################
@@ -80,7 +80,7 @@ importTrajectoryData = function(connection, dbms, schema, trajectories) {
   DatabaseConnector::executeSql(connection,
                                   sql = sql)
 
-  filterBySettings(connection = connection, dbms = dbms, schema = schema, settings = trajSettings)
+  filterBySettings(connection = connection, dbms = dbms, schema = schema, settings = settings)
 
   returnData <- importTempData(connection, dbms, schema)
   return(returnData)
