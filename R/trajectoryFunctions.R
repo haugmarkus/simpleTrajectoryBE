@@ -249,6 +249,34 @@ queryEdgesDatasetGroup <- function(connection, dbms, schema, groupId = NULL) {
   return(returnData)
 }
 
+#' Query data about nodes from specified group
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @param groupId Group id for patients
+#' @export
+queryNodesDatasetGroup <- function(connection, dbms, schema, groupId = NULL) {
+  if (is.null(groupId)) {
+    if(dbms == "postgresql") {
+      sql <- paste("WITH sorted_states AS (SELECT state_label, state_start_date::timestamp, state_end_date::timestamp FROM ", schema, ".patient_trajectories_temp), state_durations AS (SELECT state_label, AVG(EXTRACT(EPOCH FROM (state_end_date - state_start_date))/86400) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(avg_duration::numeric, 2) AS avg_duration FROM state_durations ORDER BY state_label", sep = "")
+    } else if (dbms == "sqlite") {
+      sql <- paste("WITH sorted_states AS (SELECT state_label, state_start_date as state_start_date, state_end_date as state_end_date FROM ", schema, ".patient_trajectories_temp), state_durations AS (SELECT state_label, AVG((state_end_date - state_start_date)) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(AVG(CAST(avg_duration AS numeric)), 2)/86400 AS avg_duration FROM state_durations ORDER BY state_label", sep = "")
+    } else {
+      return(print("Your DBMS is not supported, please contact package maintainer for an update!"))
+    }
+  } else {
+    if(dbms == "postgresql") {
+      sql <- paste("WITH sorted_states AS (SELECT state_label, state_start_date::timestamp, state_end_date::timestamp FROM ", schema, ".patient_trajectories_temp WHERE group_label = '", groupId ,"'), state_durations AS (SELECT state_label, AVG(EXTRACT(EPOCH FROM (state_end_date - state_start_date))/86400) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(avg_duration::numeric, 2) AS avg_duration FROM state_durations ORDER BY state_label", sep = "")
+    } else if (dbms == "sqlite") {
+      sql <- paste("WITH sorted_states AS (SELECT state_label, state_start_date as state_start_date, state_end_date as state_end_date FROM ", schema, ".patient_trajectories_temp WHERE group_label = '", groupId ,"'), state_durations AS (SELECT state_label, AVG((state_end_date - state_start_date)) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(AVG(CAST(avg_duration AS numeric)), 2)/86400 AS avg_duration FROM state_durations ORDER BY state_label", sep = "")
+    } else {
+      return(print("Your DBMS is not supported, please contact package maintainer for an update!"))
+    }
+  }
+  returnData <- DatabaseConnector::querySql(connection, sql = sql)
+  return(returnData)
+}
 
 #' Remove all instances for patient which occur after selected state occurrence
 #'
