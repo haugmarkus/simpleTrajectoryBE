@@ -169,6 +169,8 @@ loadUITrajectories = function(pathToFile = NULL,
     colnames(trajData) <- c("STATE_LABEL", "INDEX", "TYPE")
     trajList[[i]] <-  trajData
   }
+  # remove all NULL values
+  trajList = Filter(function(x) !is.null(x), trajList)
   return(trajList)
 }
 
