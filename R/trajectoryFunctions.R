@@ -268,8 +268,6 @@ filterBySettings <-
       if (table$TYPE[1] == 1) {
         firstState = table$STATE_LABEL[1]
         lastState = table$STATE_LABEL[nrow(table)]
-        print(firstState)
-        print(lastState)
         removeBeforeDatasetDB(connection, dbms, schema, selectedState = firstState)
         removeAfterDatasetDB(connection, dbms, schema, selectedState = lastState)
 

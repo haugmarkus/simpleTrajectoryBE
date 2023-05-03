@@ -14,7 +14,7 @@ test_that("Quering all patient data with specified settings", {
   trajSettings = loadUITrajectories((paste(pathToResults,pathToFile, sep ="")))
   dataTable <- getDistinctTrajectoriesTable(connection = connection, dbms = dbms, schema = schema)
   result <- outputTrajectoryStatisticsTables(dataTable = dataTable, settings = trajSettings)
-  returnedData <- importTrajectoryData(connection, dbms, schema, result$matching)
+  returnedData <- importTrajectoryData(connection, dbms, schema, result$matching, settings = trajSettings)
   DatabaseConnector::disconnect(connection)
   expect_equal(nrow(returnedData), 15001)
 })
