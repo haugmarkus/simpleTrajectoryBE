@@ -1,0 +1,33 @@
+DBMS:
+postgresql
+
+Error:
+org.postgresql.util.PSQLException: ERROR: subquery in FROM must have an alias
+  Hint: For example, FROM (SELECT ...) [AS] foo.
+  Position: 157
+
+SQL:
+CREATE TABLE ohdsi_temp.patient_trajectories_temp_temp  AS
+SELECT
+subject_id, state_label, state_start_date, state_end_date, age, gender, group_label 
+FROM
+(SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM ohdsi_temp.patient_trajectories_temp pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM ohdsi_temp.patient_trajectories_temp WHERE state_label = 'State1' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM ohdsi_temp.patient_trajectories_temp WHERE state_label = 'State1') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = 'State1') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date)
+
+R version:
+R version 4.2.3 (2023-03-15)
+
+Platform:
+aarch64-apple-darwin20
+
+Attached base packages:
+- stats
+- graphics
+- grDevices
+- utils
+- datasets
+- methods
+- base
+
+Other attached packages:
+- simpleTrajectoryBE (0.0.0.9000)
+- testthat (3.1.7)

@@ -52,8 +52,10 @@ createTrajectoriesTable(conn = connection,dbms = dbms ,schema = schema, data = d
 
 head(getEdgesDataset(connection, dbms,schema))
 
+queryEdgesDatasetGroup(connection = connection, dbms = dbms,schema = schema, groupId = NULL)
+queryNodesDatasetGroup(connection = connection, dbms = dbms,schema = schema, groupId = NULL)
 
-filterBySettings(connection = connection, dbms = dbms, schema = "main", settings = trajSettings)
+filterBySettings(connection = connection, dbms = dbms, schema = schema, settings = trajSettings)
 removeBeforeDatasetDB(connection = connection, dbms,schema, "State2")
 ################################################################################
 #

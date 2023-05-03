@@ -142,7 +142,7 @@ removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState) {
   dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_temp')
 
   # If there is no such state it will return zero rows
-  sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date);"
+  sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date) foo;"
   sql <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql,
@@ -182,7 +182,7 @@ removeAfterDatasetDB <- function(connection, dbms, schema, selectedState) {
   dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_temp')
 
   # If there is no such state it will return zero rows
-  sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MAX(state_start_date) AS max_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date <= s.max_start_date ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date);"
+  sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MAX(state_start_date) AS max_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date <= s.max_start_date ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date) foo;"
   sql <- loadRenderTranslateSql(
     dbms = dbms,
     sql = sql,
@@ -261,16 +261,14 @@ queryNodesDatasetGroup <- function(connection, dbms, schema, groupId = NULL) {
     if(dbms == "postgresql") {
       sql <- paste("WITH sorted_states AS (SELECT state_label, state_start_date::timestamp, state_end_date::timestamp FROM ", schema, ".patient_trajectories_temp), state_durations AS (SELECT state_label, AVG(EXTRACT(EPOCH FROM (state_end_date - state_start_date))/86400) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(avg_duration::numeric, 2) AS avg_duration FROM state_durations ORDER BY state_label", sep = "")
     } else if (dbms == "sqlite") {
-      sql <- paste("WITH sorted_states AS (SELECT state_label, state_start_date as state_start_date, state_end_date as state_end_date FROM ", schema, ".patient_trajectories_temp), state_durations AS (SELECT state_label, AVG((state_end_date - state_start_date)) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(AVG(CAST(avg_duration AS numeric)), 2)/86400 AS avg_duration FROM state_durations ORDER BY state_label", sep = "")
-    } else {
+      sql <- paste("WITH sorted_states AS (SELECT state_label, datetime(state_start_date, 'unixepoch') as state_start_date, datetime(state_end_date, 'unixepoch') as state_end_date FROM ", schema, ".patient_trajectories_temp), state_durations AS (SELECT state_label, AVG((strftime('%s', state_end_date) - strftime('%s', state_start_date))/86400.0) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(avg_duration, 2) AS avg_duration FROM state_durations ORDER BY state_label", sep = "")        } else {
       return(print("Your DBMS is not supported, please contact package maintainer for an update!"))
     }
   } else {
     if(dbms == "postgresql") {
       sql <- paste("WITH sorted_states AS (SELECT state_label, state_start_date::timestamp, state_end_date::timestamp FROM ", schema, ".patient_trajectories_temp WHERE group_label = '", groupId ,"'), state_durations AS (SELECT state_label, AVG(EXTRACT(EPOCH FROM (state_end_date - state_start_date))/86400) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(avg_duration::numeric, 2) AS avg_duration FROM state_durations ORDER BY state_label", sep = "")
     } else if (dbms == "sqlite") {
-      sql <- paste("WITH sorted_states AS (SELECT state_label, state_start_date as state_start_date, state_end_date as state_end_date FROM ", schema, ".patient_trajectories_temp WHERE group_label = '", groupId ,"'), state_durations AS (SELECT state_label, AVG((state_end_date - state_start_date)) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(AVG(CAST(avg_duration AS numeric)), 2)/86400 AS avg_duration FROM state_durations ORDER BY state_label", sep = "")
-    } else {
+      sql <- paste("WITH sorted_states AS (SELECT state_label, datetime(state_start_date, 'unixepoch') as state_start_date, datetime(state_end_date, 'unixepoch') as state_end_date FROM ", schema, ".patient_trajectories_temp WHERE group_label = '", groupId ,"'), state_durations AS (SELECT state_label, AVG((strftime('%s', state_end_date) - strftime('%s', state_start_date))/86400.0) AS avg_duration FROM sorted_states GROUP BY state_label) SELECT state_label AS state, ROUND(avg_duration, 2) AS avg_duration FROM state_durations ORDER BY state_label", sep = "")    } else {
       return(print("Your DBMS is not supported, please contact package maintainer for an update!"))
     }
   }
