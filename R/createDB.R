@@ -153,26 +153,34 @@ createTrajectoriesTable = function(connection, dbms, data, schema){
 ################################################################################
 #' @param pathToFile The path to the settings file
 #' @export
-loadUITrajectories = function(pathToFile = NULL,
-                              settings = NA) {
+loadUITrajectories <- function(pathToFile = NULL,
+                               settings = NA) {
   if (!is.null(pathToFile)) {
     settings <- readr::read_csv(pathToFile)
     names(settings)[names(settings) == 'STATE'] <- 'STATE_LABEL'
   }
-  # nrTrajectories <- length(unique(settings$TRAJECTORY_ID))
-  trajList = list()
+
+  trajList <- list()
 
   for (i in unique(settings$TRAJECTORY_ID)) {
     trajData <- dplyr::filter(settings, TRAJECTORY_ID == i)
     trajData <- dplyr::arrange(trajData, TIME)
-    trajData <- dplyr::select(trajData, STATE_LABEL, TIME, TYPE)
-    colnames(trajData) <- c("STATE_LABEL", "INDEX", "TYPE")
-    trajList[[i]] <-  trajData
+    trajData <- dplyr::select(trajData, STATE_LABEL, TYPE)
+
+    trajSettings <- list(
+      type = unique(trajData$TYPE)[1],
+      STATE_LABEL = trajData$STATE_LABEL
+    )
+
+    trajList[[i]] <- trajSettings
   }
-  # remove all NULL values
-  trajList = Filter(function(x) !is.null(x), trajList)
+
+  # Remove all NULL values
+  trajList <- Filter(function(x) !is.null(x), trajList)
+
   return(trajList)
 }
+
 
 
 ################################################################################
@@ -207,6 +215,6 @@ selectTable <- function(connection, dbms, schema, table) {
   )
   returnData <- DatabaseConnector::querySql(connection,
                                             sql = sql)
-
+return(returnData)
  }
 

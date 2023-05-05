@@ -57,6 +57,7 @@ importTrajectoryData = function(connection, dbms, schema, trajectories, settings
 
   # Drop temp table
   dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
+  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_filtered')
 ################################################################################
 # Querying the data
 ################################################################################
@@ -76,11 +77,14 @@ importTrajectoryData = function(connection, dbms, schema, trajectories, settings
       trajectories = paste0("'", paste(trajectories$TRAJECTORY, collapse = "','"), "'")
     )
   }
-
   DatabaseConnector::executeSql(connection,
                                   sql = sql)
 
-  filterBySettings(connection = connection, dbms = dbms, schema = schema, settings = settings)
+  if(any(sapply(settings, function(x) x$type == 1))){
+
+    filterBySettings(connection = connection, dbms = dbms, schema = schema, settings = settings)
+
+  }
 
   returnData <- importTempData(connection, dbms, schema)
   return(returnData)
@@ -136,10 +140,11 @@ importTempData = function(connection, dbms, schema) {
 #' @param dbms The database management system
 #' @param schema Schema in the database where the tables are located
 #' @param selectedState Selected state
+#' @param active Boolean indicating whether or not the function is used in TrajectoryMappings package
 #' @export
-removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState) {
+removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState, active = TRUE) {
   # Drop table
-  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_temp')
+    dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_temp')
 
   # If there is no such state it will return zero rows
   sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_temp FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date > s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date) foo;"
@@ -153,18 +158,19 @@ removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState) {
   DatabaseConnector::executeSql(connection = connection, sql)
 
   # Drop table
-  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
+  if(active){
+    dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
 
-  sql <- "ALTER TABLE @schema.@tableB RENAME TO @tableA;"
-  sql <- loadRenderTranslateSql(
-    dbms = dbms,
-    sql = sql,
-    schema = schema,
-    tableA = 'patient_trajectories_temp',
-    tableB = 'patient_trajectories_temp_temp'
-  )
-  DatabaseConnector::executeSql(connection = connection, sql)
-
+    sql <- "ALTER TABLE @schema.@tableB RENAME TO @tableA;"
+    sql <- loadRenderTranslateSql(
+      dbms = dbms,
+      sql = sql,
+      schema = schema,
+      tableA = 'patient_trajectories_temp',
+      tableB = 'patient_trajectories_temp_temp'
+    )
+    DatabaseConnector::executeSql(connection = connection, sql)
+  }
   # colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE", "AGE", "GENDER", "GROUP_LABEL")
   #
   # return(returnData)
@@ -176,8 +182,9 @@ removeBeforeDatasetDB <- function(connection, dbms, schema, selectedState) {
 #' @param dbms The database management system
 #' @param schema Schema in the database where the tables are located
 #' @param selectedState Selected state
+#' @param active Boolean indicating whether or not the function is used in TrajectoryMappings package
 #' @export
-removeAfterDatasetDB <- function(connection, dbms, schema, selectedState) {
+removeAfterDatasetDB <- function(connection, dbms, schema, selectedState, active = TRUE) {
   # Drop table
   dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_temp')
 
@@ -193,17 +200,21 @@ removeAfterDatasetDB <- function(connection, dbms, schema, selectedState) {
   DatabaseConnector::executeSql(connection = connection, sql)
 
   # Drop table
-  dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
+  if(active){
+    dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
 
-  sql <- "ALTER TABLE @schema.@tableB RENAME TO @tableA;"
-  sql <- loadRenderTranslateSql(
-    dbms = dbms,
-    sql = sql,
-    schema = schema,
-    tableA = 'patient_trajectories_temp',
-    tableB = 'patient_trajectories_temp_temp'
-  )
-  DatabaseConnector::executeSql(connection = connection, sql)
+    sql <- "ALTER TABLE @schema.@tableB RENAME TO @tableA;"
+    sql <- loadRenderTranslateSql(
+      dbms = dbms,
+      sql = sql,
+      schema = schema,
+      tableA = 'patient_trajectories_temp',
+      tableB = 'patient_trajectories_temp_temp'
+    )
+    DatabaseConnector::executeSql(connection = connection, sql)
+  }
+
+
 
   # colnames(returnData) <- c("SUBJECT_ID", "STATE_LABEL", "STATE_START_DATE", "STATE_END_DATE", "AGE", "GENDER", "GROUP_LABEL")
   #
@@ -288,15 +299,115 @@ filterBySettings <-
            dbms,
            schema,
            settings) {
-    unlist(lapply(settings, function(table) {
-      # trajStates <- NULL
+    sql <- "SELECT TOP 0 * INTO @schema.@tableB FROM @schema.@tableA;"
+    sql <- loadRenderTranslateSql(
+      dbms = dbms,
+      sql = sql,
+      schema = schema,
+      tableA = 'patient_trajectories_temp',
+      tableB = "patient_trajectories_temp_filtered"
+    )
+    DatabaseConnector::executeSql(connection = connection, sql)
+    unlist(lapply(settings, function(setting){
       # Exact trajectory case meaning we will cut trajectories starting and ending points
-      if (table$TYPE[1] == 1) {
-        firstState = table$STATE_LABEL[1]
-        lastState = table$STATE_LABEL[nrow(table)]
-        removeBeforeDatasetDB(connection, dbms, schema, selectedState = firstState)
-        removeAfterDatasetDB(connection, dbms, schema, selectedState = lastState)
+      if (setting$type == 1) {
+        firstState = setting$STATE_LABEL[1]
+        lastState = setting$STATE_LABEL[length(setting$STATE_LABEL)]
+        # removeBeforeDatasetDB(connection, dbms, schema, selectedState = firstState)
+        # removeAfterDatasetDB(connection, dbms, schema, selectedState = lastState)
+
+        # Drop table
+        dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_filtering1')
+        dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_filtering2')
+        # Remove before. If there is no such state it will return zero rows
+
+        sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_filtering1 FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MIN(state_start_date) AS min_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date >= s.min_start_date OR (pt.state_start_date = s.min_start_date AND state_label = '@selectedState') ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date) foo;"
+        sql <- loadRenderTranslateSql(
+          dbms = dbms,
+          sql = sql,
+          schema = schema,
+          table = 'patient_trajectories_temp',
+          selectedState = firstState
+        )
+
+
+        DatabaseConnector::executeSql(connection = connection, sql)
+
+        # Remove after. If there is no such state it will return zero rows.
+        # If there is no such state it will return zero rows
+        sql <- "SELECT subject_id, state_label, state_start_date, state_end_date, age, gender, group_label INTO @schema.patient_trajectories_temp_filtering2 FROM (SELECT pt.subject_id as subject_id, state_label, state_start_date, state_end_date, age, gender, group_label FROM @schema.@table pt JOIN (SELECT subject_id, MAX(state_start_date) AS max_start_date FROM @schema.@table WHERE state_label = '@selectedState' GROUP BY subject_id) s ON pt.subject_id = s.subject_id WHERE pt.subject_id IN (SELECT DISTINCT subject_id FROM @schema.@table WHERE state_label = '@selectedState') AND pt.state_start_date <= s.max_start_date ORDER BY pt.subject_id, pt.state_start_date, pt.state_end_date) foo;"
+        sql <- loadRenderTranslateSql(
+          dbms = dbms,
+          sql = sql,
+          schema = schema,
+          table = 'patient_trajectories_temp_filtering1',
+          selectedState = lastState
+        )
+        DatabaseConnector::executeSql(connection = connection, sql)
+
+        dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_filtering1')
+
+
+
+        mergeNewSubjects(connection = connection, dbms = dbms, schema = schema, tableA = "patient_trajectories_temp_filtered", tableB = "patient_trajectories_temp_filtering2")
 
       }
     }))
+    dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp')
+
+    sql <- "ALTER TABLE @schema.@tableB RENAME TO @tableA;"
+    sql <- loadRenderTranslateSql(
+      dbms = dbms,
+      sql = sql,
+      schema = schema,
+      tableA = 'patient_trajectories_temp',
+      tableB = 'patient_trajectories_temp_filtered'
+    )
+    DatabaseConnector::executeSql(connection = connection, sql)
+    dropTable(connection = connection, dbms = dbms, schema = schema, table = 'patient_trajectories_temp_filtered')
   }
+
+#' Merge two tables, only updating subject_ids not present in tableA
+#'
+#' @param connection Connection to the database (DatabaseConnector)
+#' @param dbms The database management system
+#' @param schema Schema in the database where the tables are located
+#' @param tableA Target table (Being updated for new subject_ids)
+#' @param tableA Source table (Source of new subject_ids)
+#' @keywords internal
+mergeNewSubjects <- function(connection, dbms, schema, tableA, tableB){
+
+  sql <- "IF OBJECT_ID('table', 'U') IS NOT NULL DROP TABLE #temp_table;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql
+  )
+  DatabaseConnector::executeSql(connection = connection, sql)
+  # Insert all data from patient_trajectories_temp_filtering2 into a temporary table
+  sql <- "SELECT * INTO #temp_table FROM @schema.@table;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    table = tableB
+  )
+  DatabaseConnector::executeSql(connection = connection, sql)
+  # Delete rows from patient_trajectories_temp that have a matching subject_id in #temp_table
+  sql <- "DELETE FROM  #temp_table WHERE subject_id IN (SELECT subject_id FROM @schema.@table);"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    table = tableA
+  )
+  DatabaseConnector::executeSql(connection = connection, sql)
+  # Insert all remaining rows from #temp_table into patient_trajectories_temp
+  sql <- "INSERT INTO @schema.@table SELECT * FROM #temp_table;"
+  sql <- loadRenderTranslateSql(
+    dbms = dbms,
+    sql = sql,
+    schema = schema,
+    table = tableA
+  )
+  DatabaseConnector::executeSql(connection = connection, sql)
+}

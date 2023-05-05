@@ -4,7 +4,7 @@
 \alias{removeAfterDatasetDB}
 \title{Remove all instances for patient which occur after selected state occurrence}
 \usage{
-removeAfterDatasetDB(connection, dbms, schema, selectedState)
+removeAfterDatasetDB(connection, dbms, schema, selectedState, active = TRUE)
 }
 \arguments{
 \item{connection}{Connection to the database (DatabaseConnector)}
@@ -14,6 +14,8 @@ removeAfterDatasetDB(connection, dbms, schema, selectedState)
 \item{schema}{Schema in the database where the tables are located}
 
 \item{selectedState}{Selected state}
+
+\item{active}{Boolean indicating whether or not the function is used in TrajectoryMappings package}
 }
 \description{
 Remove all instances for patient which occur after selected state occurrence

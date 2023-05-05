@@ -28,6 +28,7 @@ resultTable$PERC <- paste(round(resultTable$TOTAL*100/amountTrajectories,2), "%"
 return(resultTable)
 }
 
+
 #' Query data tables (matching, partially matching, not matching) defined in the settings for providing inclusion statistics
 #'
 #' @param dataTable Result of getDistinctTrajectoriesTable function
@@ -43,55 +44,59 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
     return(result)
   }
 
-  trajDefined <- unlist(lapply(settings, function(table){
-  trajStates <- NULL
-  # if (table$TYPE[1] == 1) {
-  # trajStates <- c()
-  # for (trajectoryPresent in dataTable$TRAJECTORY) {
-  # trajectoryPresentAtomic <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]]
-  # trajectorySelectedAtomic <- table$STATE_LABEL
-  #
-  # if(identical(trajectorySelectedAtomic,trajectoryPresentAtomic[table$INDEX])) {
-  #   trajectoryCollapsed <- paste0(trajectoryPresentAtomic[1:max(table$INDEX)], collapse = "->>") #paste0(trajectorySelectedAtomic, collapse = "->>")
-  #   trajStates <- c(trajStates, trajectoryCollapsed)
-  # }
-  # }
-  # }
-  # if (table$TYPE[1] == 0) {
+  type1_present <- any(sapply(settings, function(x) x$type == 1))
+
+  settings <- settings[order(sapply(settings, function(x) x$type), decreasing = TRUE)]
+
+  trajDefined <- unlist(lapply(settings, function(setting){
+    table <- setting$STATE_LABEL
+    type <- setting$type
+
+    if (type1_present && type == 0) {
+      return(NULL)
+    }
+
+    trajStates <- NULL
     trajStates <- c() # Return vector with all relevant trajectories
     for (trajectoryPresent in dataTable$TRAJECTORY) { # We start from looping over all present trajectories
       trajectoryPresentAtomicOriginal <-  stringr::str_split(trajectoryPresent, pattern = "->>")[[1]] # Break present trajectory down to states
       trajectoryPresentAtomic <- trajectoryPresentAtomicOriginal
       i <- 0
       k <- 0 # for iterating the trajectoryPresent variable
-      trajectorySelectedAtomic <- table$STATE_LABEL #stringr::str_split(trajDefined, pattern = "->>")[[1]]
+      trajectorySelectedAtomic <- table #stringr::str_split(trajDefined, pattern = "->>")[[1]]
       for (state in trajectorySelectedAtomic) { # Break selected trajectory down to states and loop over states
         if(state %in% trajectoryPresentAtomic){ # Check if state present in present trajectory
           index <- match(state,trajectoryPresentAtomic) # Find first occurrance index
-          # if (is.na(index)){break}
           i <- i + 1
           k <- k + index
-          # index == length(trajectoryPresentAtomic) |
           if (i == length(trajectorySelectedAtomic)) { # If we are observing the last element of present trajectory and the state of selected trajectory is also the last one -- return
             trajStates <- c(trajStates, paste0( trajectoryPresentAtomicOriginal[1:k], collapse = "->>") ) # Add trajectory to return vector
             break
           }
           else if (index == length(trajectoryPresentAtomic)) {break}
           trajectoryPresentAtomic <- trajectoryPresentAtomic[(match(state,trajectoryPresentAtomic)+1):length(trajectoryPresentAtomic)] # Lets keep the tail of present trajectory
-          }
+        }
         else {break}
       }
     }
-  # }
-  return(unique(trajStates))
+
+    if (type == 1) {
+      trajStates <- trajStates[sapply(trajStates, function(x) {
+        trajectoryStates <- stringr::str_split(x, pattern = "->>")[[1]]
+        all(sapply(table, function(state) sum(state == trajectoryStates) >= sum(state == table)))
+      })]
+    }
+
+    return(unique(trajStates))
   }))
+
+  trajDefined <- Filter(Negate(is.null), trajDefined) # Remove NULL values from trajDefined
+
   indexes <- 1:nrow(dataTable)
   matchingVec <- as.logical(Reduce("+",lapply(trajDefined, function(x){
-    #x == dataTable$TRAJECTORY
     grepl(x, dataTable$TRAJECTORY)
   })))
   partiallyMatchingVec <- as.logical(Reduce("+", lapply(trajDefined,function(x){
-    #grepl(x, dataTable$TRAJECTORY)
     split_string <- strsplit(x, "->>")
     resulting_array <- unlist(split_string)
     sapply(strsplit(dataTable$TRAJECTORY, "->>"), function(x) any(x %in% resulting_array))
@@ -106,12 +111,4 @@ outputTrajectoryStatisticsTables <- function(dataTable, settings = NULL) {
     "notMatching" = dataTable[indexes[!partiallyMatchingVec],]
   )
   return(result)
-  ##############################################################################
-  #
-  # Can be accessed like:
-  # result[['matching']], result[['partiallyMatching']], result[['notMatching']]
-  # OR
-  # result$matching, result$partiallyMatching, result$notMatching
-  #
-  #############################################################################
 }

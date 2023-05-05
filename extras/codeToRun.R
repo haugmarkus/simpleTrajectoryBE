@@ -63,17 +63,21 @@ removeBeforeDatasetDB(connection = connection, dbms,schema, "State2")
 #
 ################################################################################
 
+trajSettings <- list(
+  list(type = 1, STATE_LABEL = c("State3","State3")),
+  list(type = 1, STATE_LABEL = c("State3","State5"))
+  )
+
 initialTable <- simpleTrajectoryBE::getDistinctTrajectoriesTable(connection = connection,dbms = dbms,schema = schema)
 matchTable <- outputTrajectoryStatisticsTables(dataTable = initialTable, settings = trajSettings)
-
+selectTable(connection, dbms, schema, table = "patient_trajectories_temp")
 ################################################################################
 #
 # Output all trajectories defined in inputUI.csv
 #
 ################################################################################
 # result = outputAll(connection = conn, dbms = dbms, schema = schema, settings = trajSettings)
-result = importTrajectoryData(connection = connection, dbms = dbms, schema = schema, trajectories = matchTable$matching)
-nrow(result)
+result = importTrajectoryData(connection = connection, dbms = dbms, schema = schema, trajectories = matchTable$matching, settings = trajSettings)
 
 
 ################################################################################
